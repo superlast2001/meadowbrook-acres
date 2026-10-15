@@ -36,7 +36,7 @@ body.shop #top{display:none}}
 #cheatBadge.show{display:block}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v8</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v0.09</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -262,7 +262,7 @@ function tryMove(dx,dy){if(!blocked(G.p.x+dx,G.p.y+dy)){G.p.x+=dx;G.p.y+=dy;}}
 const SPR={};
 // spr(key,w,h,draw,outline): draw(P,R) paints into a pixel buffer; optional auto-outline colour.
 function spr(key,w,h,draw,outline){const buf=new Array(w*h).fill(null);
-  const P=(x,y,c)=>{x|=0;y|=0;if(c&&x>=0&&y>=0&&x<w&&y<h)buf[y*w+x]=c;};
+  const P=(x,y,c)=>{x|=0;y|=0;if(c&&x>=0&&y>=0&&x<w&&y<h)buf[y*w+x]=c==='X'?null:c;};
   const R=(x,y,ww,hh,c)=>{for(let j=0;j<hh;j++)for(let i=0;i<ww;i++)P(x+i,y+j,c);};
   draw(P,R,w,h);
   if(outline){const o=buf.slice();for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(!o[j*w+i]&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const X=i+a,Y=j+b;return X>=0&&Y>=0&&X<w&&Y<h&&o[Y*w+X];}))buf[j*w+i]=outline;}
@@ -614,10 +614,11 @@ function rzBody(P,R,o){const {S,A,H,O,V,RE,CR,CRD,T,PU,GO,GOD}=RC,b=o.b||0,lg=o.
   const sk=back?A:S,ar=back?S:A; // from behind, the armored side is on the viewer's left
   const l1=lg==1?1:0,l2=lg==2?1:0;
   // legs: thick thighs w/ quad split, calves, feet
-  blob(P,[[9,28.5-l1,3.4],[8.5,32-l1,2.2]],sk,null);blob(P,[[15,28.5-l2,3.4],[15.5,32-l2,2.2]],ar,null);
-  if(!back){P(9,27-l1,S[0]);P(9,28-l1,S[0]);P(10,29-l1,S[1]);}
-  R(6,34-l1,5,2,back?A[1]:S[2]);R(6,35-l1,5,1,back?A[0]:S[1]);R(13,34-l2,5,2,back?S[2]:A[1]);R(13,35-l2,5,1,back?S[1]:A[0]);
-  if(!back){P(16,30-l2,PU);R(14,33-l2,3,1,T);P(8,30-l1,H[2]);} else {P(8,30-l1,PU);}
+  // legs in an inverted-V stance: each thigh is its own shape (gap is cut out below)
+  blob(P,[[8.3,28.5-l1,3.3],[7.6,32-l1,2.2]],sk,null);blob(P,[[15.7,28.5-l2,3.3],[16.4,32-l2,2.2]],ar,null);
+  if(!back){P(7,28-l1,S[0]);P(7,29-l1,S[0]);P(8,30-l1,S[1]);}
+  R(5,34-l1,5,2,back?A[1]:S[2]);R(5,35-l1,5,1,back?A[0]:S[1]);R(14,34-l2,5,2,back?S[2]:A[1]);R(14,35-l2,5,1,back?S[1]:A[0]);
+  if(!back){P(17,30-l2,PU);R(15,33-l2,3,1,T);P(7,31-l1,H[2]);} else {P(7,31-l1,PU);}
   // torso V-taper base (lats) then rounded muscles on top
   for(let y=11;y<=24;y++){const hw=y<15?8:Math.round(8-(y-15)*0.5);for(let x=12-hw;x<12+hw;x++)P(x,y+b,(x<12?sk:ar)[1]);}
   blob(P,[[9.5,10.5+b,2.6]],sk,null);blob(P,[[14.5,10.5+b,2.6]],ar,null); // traps
@@ -628,10 +629,13 @@ function rzBody(P,R,o){const {S,A,H,O,V,RE,CR,CRD,T,PU,GO,GOD}=RC,b=o.b||0,lg=o.
     R(12,17+b,1,7,RC.O);R(7,17+b,1,7,S[0]);R(16,17+b,1,7,A[0]);P(14,19+b,T);P(14,22+b,T);}
   else{R(11,12+b,2,12,S[0]);R(12,12+b,1,12,A[0]);}
   // briefs
+  // open a real see-through gap between the legs (auto-outline then rims each inner thigh)
+  for(let y=29;y<=37;y++){const k=y<31?2:y<34?3:4;for(let x=12-k;x<12+k;x++)P(x,y,'X');}
+  // V-shaped briefs ending at the crotch point
   const BR=['#d6f0ff','#2a8cff','#ff3fa4','#ff9a1f'],OL=RC.O;
-  R(8,23,8,1,OL);R(8,24,8,1,BR[0]);R(8,25,8,1,BR[1]);R(9,26,6,1,BR[2]);R(10,27,4,1,BR[3]);P(9,25,'#7cc0ff');P(14,25,'#ff7ac4');
-  for(const [x,y] of [[7,24],[7,25],[8,26],[9,27],[10,28],[11,28],[12,28],[13,28],[14,27],[15,26],[16,25],[16,24]])P(x,y,OL);
-  for(const [x,y] of [[7,26],[8,27],[9,28],[10,29]])P(x,y,sk[0]);for(const [x,y] of [[16,26],[15,27],[14,28],[13,29]])P(x,y,ar[0]);
+  R(8,23,8,1,OL);R(8,24,8,1,BR[0]);R(8,25,8,1,BR[1]);R(9,26,6,1,BR[2]);R(10,27,4,1,BR[3]);R(11,28,2,1,BR[3]);P(9,25,'#7cc0ff');P(14,25,'#ff7ac4');
+  for(const [x,y] of [[7,24],[7,25],[8,26],[9,27],[10,28],[11,29],[12,29],[13,28],[14,27],[15,26],[16,25],[16,24]])P(x,y,OL);
+  for(const [x,y] of [[7,26],[8,27],[9,28]])P(x,y,sk[0]);for(const [x,y] of [[16,26],[15,27],[14,28]])P(x,y,ar[0]);
   if(!back){P(11,24,'#ffffff');P(12,24,'#ffffff');}
   // armor arm: big rounded pauldron, thick arm, fist on hip
   const ax=back?3:20,dir=back?-1:1;
@@ -646,8 +650,9 @@ function rzBody(P,R,o){const {S,A,H,O,V,RE,CR,CRD,T,PU,GO,GOD}=RC,b=o.b||0,lg=o.
 }
 function rzSide(P,R,o){const {S,A,H,V,RE,CR,T,PU,GO,GOD}=RC,lg=o.leg||0,fl=lg==1?2:lg==2?-2:0;
   // far (armored) leg behind, near bare leg in front
-  blob(P,[[12-fl,28.5,3],[12-fl,32,2]],A,null);R(10-fl,34,5,2,A[1]);P(13-fl,30,PU);
-  blob(P,[[12+fl,28.5,3.4],[12+fl,32,2.2]],S,null);R(10+fl,34,6,2,S[2]);R(10+fl,35,6,1,S[1]);P(12+fl,27,S[0]);
+  const bx=11-fl,nx=13+fl,AF=['#121419','#1f232b','#2f3540','#555d6b']; // far armored leg: darker + offset back
+  blob(P,[[bx,28.5,2.9],[bx-0.5,32,2]],AF,null);R(bx-3,34,5,2,AF[1]);P(bx,30,PU);
+  blob(P,[[nx,28.5,3.3],[nx,32,2.2]],S,null);R(nx-2,34,6,2,S[2]);R(nx-2,35,6,1,S[1]);P(nx,27,S[0]);for(let y=26;y<=33;y++)P(nx-3,y,RC.O);
   for(let y=11;y<=24;y++){const hw=y<15?6:Math.round(6-(y-15)*0.35);for(let x=12-hw;x<12+hw;x++)P(x,y,S[1]);}
   blob(P,[[14.5,14,3.4]],S,null);R(12,17,5,1,S[0]);blob(P,[[8,13,3]],A,null); // big pec in front, armor shoulder behind
   for(let i=0;i<3;i++)blob(P,[[15,18.8+i*2,1.2]],S,null);
@@ -660,7 +665,7 @@ function rzSide(P,R,o){const {S,A,H,V,RE,CR,T,PU,GO,GOD}=RC,lg=o.leg||0,fl=lg==1
 const RZ_HEAD={
  front:["h..........d","hl........md",".hl.hhll.md.",".lhhhllllmdc",".lhhdlldmmdc",".lhllddlmmdc",".ldndlldndmC","lmnrrllrrnmd","lmnngllgnnmd",".mnnnnnnnnd.","..mrnnnnrd..","...nrnnrn...","....nrrn....",".....nn....."],
  back:["h....cc....d","hl...cc...md",".hl.hcCl.md.",".lhhlcClmmd.",".lhhlcCmmmd.",".lhllcCmmmd.",".lhllcCmmmd.","lmllmcCmmmmd","lmlmmcCmmmmd",".mmmmcCmmdd.","..mmmmmmmd..","...dddddd...","",""],
- side:["......h.....",".....hl.....","cc.hhlll....","cclhhllllm..",".clhlllllmd.",".clhllllmmd.",".clmllllnnd.","..lmlllnrgd.","..mmllmnnnn.","..mmmmnnrnn.","...mmnnrrn..","....dnnnnn..",".........n.."]};
+ side:["...h........","...hl.......","....hl......","c..hhllll...","cclhllllllm.","cclhlllllmmd",".clmllllnrrd",".clmlllllmmd","..lmmlllnnnd","..mmmmnnnnnn","...mmnnrrrnn","....dnnnnnnn",".......nnnn.","..........n."]};
 function rzHead(P,view,b){const H=RC.H,col={h:H[3],l:H[2],m:H[1],d:H[0],n:'#1e2440',r:'#ff3b3b',g:'#ffb4a4',c:RC.CR,C:RC.CRD};
   RZ_HEAD[view].forEach((row,y)=>{for(let x=0;x<row.length;x++){const c=col[row[x]];if(c)P(6+x,y+b,c);}});}
 function makeRzel(){const out=RC.O,sh=(P,R)=>[(x,y,c)=>P(x,y+2,c),(x,y,w,h,c)=>R(x,y+2,w,h,c)];
