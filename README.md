@@ -31,7 +31,7 @@ Press ` or F2 (desktop), tap the version label (e.g. "v0.09") 5 times quickly, o
 Rzel (silver horned helmet-mask, half cyber-armor) stands behind the shop counter with a 2-frame idle (breathing + peace sign). Use Hand on him or the counter: greeting with choices Shop / Follow me / Bye. Following, he trails ~1.5 tiles behind, walks around obstacles via your trail, and warps to you if stuck or >10 tiles away. Hand on him while away: Stay here / Go back to shop (or Follow me). While he's away the counter shows a "Rzel is out" sign and the shop is closed. Follow state is saved. Dev cheat: "Rzel follow". Override art with `ASSETS.shopkeeper` (24x40; replaces all his frames). Sprite keys: shopkeeper_0/1, rzel_{down,up,left,right}_{0,1,2}.
 
 ## Versioning
-The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.30; next: v0.0.0.31, ...).
+The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.31; next: v0.0.0.32, ...).
 
 ### Rzel friendship (v0.10)
 0-5 hearts (100 pts each) shown in his dialogue box. Talking once per day: +15. One Gift per day (dialogue choice; gives your best item): chocolate = favorite +80, melon/corn = liked +45, radish = neutral +20. Greetings are tiered by hearts (0-1 teasing, 2-3 flirty, 4-5 devoted) plus rain/chocolate-rain lines. Saved in the save file (`rzel: {pts, talkDay, giftDay}`). Dev cheats: +1 heart, Reset hearts.
@@ -109,3 +109,10 @@ Rzel's world sprite now uses normal proportions (`ASSETS.rzel_world`) built from
 - The adult full-body FRONT and all expression icons have their hair intact. Icons are cut out with a transparent background (no dark panel or border) and cropped to head and shoulders.
 - All 16 world frames rebuilt with the same cutout; each frame is one connected piece.
 - Previews: v30-ares-adult.png, v30-ares-icons.png, v30-ares-frames.png, v30-ares-dialogue.png
+
+## v0.0.0.31
+- Ares's world sprite now uses normal adult proportions like Rzel, about 32px tall (about 1.3x the farmer). Built from the sheet's turnaround: FRONT, BACK, the real SIDE LEFT and SIDE RIGHT views, no mirroring.
+- Uses the v30 edge-connected background removal. Shared 26-colour palette, despeckle, 1px outline, about 3 art px per world px. 72x100 cells, drawn h=33.
+- Walk: front/back alternate a raised leg; side views split the legs (back leg shaded); the whole frame bobs. Sword visible on the shoulders in all 16 frames.
+- Dialogue adult portrait and icons are unchanged from v30.
+- Previews: v31-ares-frames.png, v31-ares-world.png
