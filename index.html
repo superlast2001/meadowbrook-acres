@@ -25,7 +25,21 @@ body.touch{background:#2a1c10}
 #dpad,#act{bottom:calc(28px + env(safe-area-inset-bottom))}
 #shopUI{bottom:auto;top:calc(var(--ch,260px) + 8px);flex-wrap:wrap;justify-content:center;width:96vw}
 #top{top:calc(var(--ch,260px) + 8px);left:50%;right:auto;transform:translateX(-50%)}
-body.shop #top{display:none}}
+body.shop #top{display:none}
+#act{width:auto}#act .row{flex-wrap:nowrap}#act .tb{width:46px;height:44px;margin:3px;font-size:13px}
+#bUse{width:72px!important;height:72px!important;border-radius:50%!important;font-size:17px!important}
+#dpad{width:138px;height:138px}#dpad .tb{width:46px;height:46px}
+#dpad,#act{bottom:calc(10px + env(safe-area-inset-bottom))}
+#act .tb,#dpad .tb{background:rgba(74,46,24,.6)}
+#menuBtn{display:flex!important;left:calc(10px + env(safe-area-inset-left));top:calc(var(--ch,260px) + 8px);width:46px;height:44px;font-size:16px}
+#top{display:none;flex-direction:column;top:auto;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);background:rgba(27,20,13,.95);border:2px solid #e0b070;border-radius:10px;padding:6px;z-index:25}
+body.menu #top{display:flex}#top .tb{margin:3px 0;min-height:44px;min-width:110px}
+body.touch:not(.hidectl) #ctlBtn{display:none}
+#ver{left:50%;transform:translateX(-50%);bottom:calc(2px + env(safe-area-inset-bottom));font-size:10px}
+#shopUI{top:auto;bottom:calc(10px + env(safe-area-inset-bottom));z-index:26;background:rgba(27,20,13,.9);border-radius:10px}
+#shopUI .tb{min-height:44px;padding:6px 10px}
+body.shop #dpad,body.shop #act,body.shop #menuBtn{display:none!important}}
+#menuBtn{display:none}
 #ver{pointer-events:auto!important;padding:6px 8px;margin:-6px -8px}
 #cheat{display:none;position:fixed;z-index:30;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,94vw);max-height:90vh;overflow:auto;background:#e9c48e;border:4px solid #2b1a0e;box-shadow:inset 0 0 0 4px #8a5530,0 6px 0 rgba(0,0,0,.35);border-radius:6px;padding:14px;box-sizing:border-box;color:#3b2414;font:bold 13px monospace}
 #cheat.show{display:block}#cheat h3{margin:0 0 6px;font-size:16px;color:#8a2e1e;display:flex;justify-content:space-between;align-items:center}
@@ -38,11 +52,11 @@ body.shop #top{display:none}}
 #cheat .info{margin:6px 2px;font-size:12px;color:#5a2e12;background:#f5dcae;border-radius:4px;padding:5px 7px}#cheat .it{display:inline-flex;align-items:center;gap:2px;margin:2px 6px 2px 0;font-size:11px}#cheat .it button{min-height:30px;padding:4px 7px}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v0.0.0.22</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v0.0.0.23</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
-<div id="top"><div class="tb" data-k="h">Help</div><div class="tb" data-k="p">Save</div><div class="tb" data-k="l">Load</div><div class="tb" data-k="r">Social</div><div class="tb" id="bDev">DEV</div></div>
+<div class="tb" id="menuBtn">&#9776;</div><div id="top"><div class="tb" id="mCtl">Controls</div><div class="tb" data-k="h">Help</div><div class="tb" data-k="p">Save</div><div class="tb" data-k="l">Load</div><div class="tb" data-k="r">Social</div><div class="tb" id="bDev">DEV</div></div>
 <div id="shopUI"><div class="tb" data-k="1">Buy 1</div><div class="tb" data-k="2">Buy 2</div><div class="tb" data-k="3">Buy 3</div><div class="tb" data-k="4">Bouquet</div><div class="tb" data-k="5">Pendant</div><div class="tb" data-k="s">Sell all</div><div class="tb" data-k="escape">Leave</div></div></div>
 <script>
 "use strict";
@@ -206,7 +220,7 @@ let cssW=960,cssH=640,DPR=1,K=3,view={w:60,h:40},cam={x:0,y:0},portraitTouch=fal
 function fitCanvas(){const b=document.body,touch=b.classList.contains('touch');
   portraitTouch=touch&&innerHeight>innerWidth;
   cssW=innerWidth;cssH=innerHeight;
-  if(portraitTouch&&!b.classList.contains('hidectl'))cssH=Math.max(260,innerHeight-395);
+  if(portraitTouch&&!b.classList.contains('hidectl'))cssH=Math.max(260,Math.round(innerHeight-Math.max(160,innerHeight*0.2)));
   DPR=Math.min(2,window.devicePixelRatio||1);
   cv.width=Math.round(cssW*DPR);cv.height=Math.round(cssH*DPR);cv.style.width=cssW+'px';cv.style.height=cssH+'px';
   document.documentElement.style.setProperty('--ch',cssH+'px');
@@ -238,6 +252,10 @@ function safeInitTouch(){try{initTouch();}catch(err){console.error('initTouch fa
 fitCanvas();
 if(isTouch)safeInitTouch();
 addEventListener('resize',()=>{try{if(!document.body.classList.contains('touch')&&detectTouch())safeInitTouch();}catch(_){}});
+try{const B=document.body;document.getElementById('menuBtn').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();B.classList.toggle('menu');},{passive:false});document.getElementById('menuBtn').addEventListener('mousedown',e=>{e.stopPropagation();B.classList.toggle('menu');});
+['click','touchend'].forEach(ev=>document.getElementById('top').addEventListener(ev,()=>setTimeout(()=>B.classList.remove('menu'),60)));
+document.getElementById('mCtl').addEventListener('pointerdown',e=>{e.stopPropagation();document.getElementById('ctlBtn').click();});
+document.getElementById('c').addEventListener('pointerdown',()=>B.classList.remove('menu'));}catch(_){}
 try{document.getElementById('ctlBtn').addEventListener('click',e=>{e.stopPropagation();const b=document.body;
   if(!b.classList.contains('touch')){b.classList.remove('hidectl');safeInitTouch();}else b.classList.toggle('hidectl');fitCanvas();});}catch(_){}
 function front(){const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[G.p.dir];
@@ -1001,7 +1019,10 @@ function greetLine(firstToday){const R=relOf('rzel'),m=R.mem,h=heartsOf('rzel'),
     "Hey there, farmer! Need seeds, or did you just miss my face? Well, my mask.",
     "Welcome back! The radish seeds missed you. So did I."];
   return chooseLine('rzel',P);}
-function spouseLine(){return pick(["Morning, love. I made coffee - well, I made it brown.","Did you sleep well? You were smiling in your sleep. I checked.","Our farm looks amazing today. So do you.","Don't work too hard out there. Come home for lunch, okay?","Hey, partner. Best part of my day? Waking up next to the best farmer in the valley."]);}
+function spouseLine(){const t=G.time;if(t<660&&Math.random()<0.6)return pick(["Morning, love. I made coffee - well, I made it brown.","Did you sleep well? You were smiling in your sleep. I checked."]);
+  if(t>=660&&t<840&&Math.random()<0.5)return pick(["Lunch time! I saved you the big sandwich.","Afternoon, love. Take a break - doctor's orders. I'm the doctor."]);
+  if(t>=1080&&Math.random()<0.6)return pick(["Evening, love. Long day? Come sit, I'll rub your shoulders.","There you are. Dinner's warm and so am I. ...That came out cheesier than planned.","Stars are out. Want to watch them with me before bed?"]);
+  return pick(["Our farm looks amazing today. So do you.","Don't work too hard out there. Come home for lunch, okay?","Hey, partner. Best part of my day? Waking up next to the best farmer in the valley."]);}
 function chatLine(id){const R=relOf(id),h=heartsOf(id),c=dayCtx();
   if(id=='rzel'){if(R.married)return chooseLine(id,[spouseLine(),"Every morning I wake up and think: I married the hardest working farmer alive. Lucky me.","When you're out in the fields I catch myself looking out the window. Every. Time.","We should take a walk by the pond tonight. Just us and the frogs."]);
     const P=[[()=>h<=2,"Name's Rzel. Best seeds in the valley. Best smile too, but you didn't hear it from me."],[()=>h<=2,"Is that dirt on your face, or are you just naturally down-to-earth?"],
