@@ -27,11 +27,11 @@ Saves from v1/v2 are migrated automatically onto the new map.
 ## Dev cheat menu (v4)
 Press ` or F2 (desktop), tap the version label (e.g. "v0.09") 5 times quickly, or tap DEV in the touch panel.
 
-## Shopkeeper Rzel (v0.0.0.24: reference-matched grey mask, crescent horns, thin eyes + fangs, friendship hearts)
+## Shopkeeper Rzel (v0.0.0.25: reference-matched grey mask, crescent horns, thin eyes + fangs, friendship hearts)
 Rzel (silver horned helmet-mask, half cyber-armor) stands behind the shop counter with a 2-frame idle (breathing + peace sign). Use Hand on him or the counter: greeting with choices Shop / Follow me / Bye. Following, he trails ~1.5 tiles behind, walks around obstacles via your trail, and warps to you if stuck or >10 tiles away. Hand on him while away: Stay here / Go back to shop (or Follow me). While he's away the counter shows a "Rzel is out" sign and the shop is closed. Follow state is saved. Dev cheat: "Rzel follow". Override art with `ASSETS.shopkeeper` (24x40; replaces all his frames). Sprite keys: shopkeeper_0/1, rzel_{down,up,left,right}_{0,1,2}.
 
 ## Versioning
-The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.24; next: v0.0.0.22, ...).
+The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.25; next: v0.0.0.25, ...).
 
 ### Rzel friendship (v0.10)
 0-5 hearts (100 pts each) shown in his dialogue box. Talking once per day: +15. One Gift per day (dialogue choice; gives your best item): chocolate = favorite +80, melon/corn = liked +45, radish = neutral +20. Greetings are tiered by hearts (0-1 teasing, 2-3 flirty, 4-5 devoted) plus rain/chocolate-rain lines. Saved in the save file (`rzel: {pts, talkDay, giftDay}`). Dev cheats: +1 heart, Reset hearts.
@@ -74,3 +74,9 @@ Rzel's world sprite now uses normal proportions (`ASSETS.rzel_world`) built from
 
 ## v0.0.0.24
 - Phone controls ~25% smaller (36px D-pad/tools, 54px USE); bar ~15% height so game view ~85%.
+
+## v0.0.0.25
+- New villager **Ares**: cocky playful warrior (spiked black/red hair, red shades, golden sword). World sprite ~Rzel height, 4-dir walk, portraits (happy/smug/serious/surprised).
+- Schedule: morning training, midday patrol, afternoon shop/plaza, evening cottage, sleep. Own red-roof cottage.
+- Romance like Rzel: hearts, bouquet dating, pendant proposal, wedding, spouse routines. Loves Iron Ore; likes chocolate/corn.
+- Social panel + DEV Character tab support Ares (hearts/status/events).
