@@ -31,7 +31,7 @@ Press ` or F2 (desktop), tap the version label (e.g. "v0.09") 5 times quickly, o
 Rzel (silver horned helmet-mask, half cyber-armor) stands behind the shop counter with a 2-frame idle (breathing + peace sign). Use Hand on him or the counter: greeting with choices Shop / Follow me / Bye. Following, he trails ~1.5 tiles behind, walks around obstacles via your trail, and warps to you if stuck or >10 tiles away. Hand on him while away: Stay here / Go back to shop (or Follow me). While he's away the counter shows a "Rzel is out" sign and the shop is closed. Follow state is saved. Dev cheat: "Rzel follow". Override art with `ASSETS.shopkeeper` (24x40; replaces all his frames). Sprite keys: shopkeeper_0/1, rzel_{down,up,left,right}_{0,1,2}.
 
 ## Versioning
-The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.20; next: v0.0.0.21, ...).
+The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.21; next: v0.0.0.22, ...).
 
 ### Rzel friendship (v0.10)
 0-5 hearts (100 pts each) shown in his dialogue box. Talking once per day: +15. One Gift per day (dialogue choice; gives your best item): chocolate = favorite +80, melon/corn = liked +45, radish = neutral +20. Greetings are tiered by hearts (0-1 teasing, 2-3 flirty, 4-5 devoted) plus rain/chocolate-rain lines. Saved in the save file (`rzel: {pts, talkDay, giftDay}`). Dev cheats: +1 heart, Reset hearts.
@@ -54,3 +54,6 @@ Chibi Rzel walks in the direction he's moving: side-profile chibi frames (left, 
 
 ### v0.0.0.20
 Fixed Rzel facing the wrong way when walking right. The sheet's 'SIDE (LEFT)' view shows his left side, so it actually faces right; the left frames now mirror it. His facing uses a smoothed movement vector with hysteresis (no jitter flips), and when he stops he turns toward the player. Side/back chibi frames are bulkier.
+
+### v0.0.0.21
+Rzel's world sprite now uses normal proportions (`ASSETS.rzel_world`) built from the sheet's full-body front, back and side views. It's cleaned to a 22-colour palette, despeckled and outlined, about 32 world px tall (~1.3x the farmer). Each direction has idle + 3 walk frames. Moods appear only in the dialogue (full-body front + expression portrait). The chibi sheets stay embedded but unused in the world.
