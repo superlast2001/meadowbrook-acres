@@ -31,7 +31,7 @@ Press ` or F2 (desktop), tap the version label (e.g. "v0.09") 5 times quickly, o
 Rzel (silver horned helmet-mask, half cyber-armor) stands behind the shop counter with a 2-frame idle (breathing + peace sign). Use Hand on him or the counter: greeting with choices Shop / Follow me / Bye. Following, he trails ~1.5 tiles behind, walks around obstacles via your trail, and warps to you if stuck or >10 tiles away. Hand on him while away: Stay here / Go back to shop (or Follow me). While he's away the counter shows a "Rzel is out" sign and the shop is closed. Follow state is saved. Dev cheat: "Rzel follow". Override art with `ASSETS.shopkeeper` (24x40; replaces all his frames). Sprite keys: shopkeeper_0/1, rzel_{down,up,left,right}_{0,1,2}.
 
 ## Versioning
-The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.26; next: v0.0.0.27, ...).
+The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.27; next: v0.0.0.28, ...).
 
 ### Rzel friendship (v0.10)
 0-5 hearts (100 pts each) shown in his dialogue box. Talking once per day: +15. One Gift per day (dialogue choice; gives your best item): chocolate = favorite +80, melon/corn = liked +45, radish = neutral +20. Greetings are tiered by hearts (0-1 teasing, 2-3 flirty, 4-5 devoted) plus rain/chocolate-rain lines. Saved in the save file (`rzel: {pts, talkDay, giftDay}`). Dev cheats: +1 heart, Reset hearts.
@@ -86,3 +86,9 @@ Rzel's world sprite now uses normal proportions (`ASSETS.rzel_world`) built from
 - Outfit: red wraparound sunglasses, spiked black hair with red tips, fingerless gloves, red loincloth (PG), golden sword, barefoot, hyper-muscular.
 - World sprite uses the sheet's chibi row (4 dirs); dialogue uses full-body FRONT + expression portraits (normal tongue-out, smile, blush+hearts, mad, serious).
 - Previews: `v26-ares-world.png`, `v26-ares-portrait.png`.
+
+## v0.0.0.27
+- **Ares world scale fix:** in-world sprite drawn at **24px** tall (same as the chibi farmer), rebuilt from the sheet's chibi row into a 48×72 farmer-layout sheet.
+- Dialogue still uses large full-body FRONT + expression portraits.
+- Hitbox/shadow/depth adjusted for the smaller world sprite.
+- Preview: `v27-ares-scale.png` (Ares next to farmer, matching height).
