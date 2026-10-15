@@ -26,12 +26,12 @@ body.touch{background:#2a1c10}
 #shopUI{bottom:auto;top:calc(var(--ch,260px) + 8px);flex-wrap:wrap;justify-content:center;width:96vw}
 #top{top:calc(var(--ch,260px) + 8px);left:50%;right:auto;transform:translateX(-50%)}
 body.shop #top{display:none}
-#act{width:auto}#act .row{flex-wrap:nowrap}#act .tb{width:46px;height:44px;margin:3px;font-size:13px}
-#bUse{width:72px!important;height:72px!important;border-radius:50%!important;font-size:17px!important}
-#dpad{width:138px;height:138px}#dpad .tb{width:46px;height:46px}
-#dpad,#act{bottom:calc(10px + env(safe-area-inset-bottom))}
+#act{width:auto}#act .row{flex-wrap:nowrap}#act .tb{width:36px;height:36px;margin:2px;font-size:11px}
+#bUse{width:54px!important;height:54px!important;border-radius:50%!important;font-size:13px!important}
+#dpad{width:108px;height:108px}#dpad .tb{width:36px;height:36px}
+#dpad,#act{bottom:calc(6px + env(safe-area-inset-bottom))}
 #act .tb,#dpad .tb{background:rgba(74,46,24,.6)}
-#menuBtn{display:flex!important;left:calc(10px + env(safe-area-inset-left));top:calc(var(--ch,260px) + 8px);width:46px;height:44px;font-size:16px}
+#menuBtn{display:flex!important;left:calc(8px + env(safe-area-inset-left));top:calc(var(--ch,260px) + 6px);width:36px;height:36px;font-size:14px}
 #top{display:none;flex-direction:column;top:auto;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);background:rgba(27,20,13,.95);border:2px solid #e0b070;border-radius:10px;padding:6px;z-index:25}
 body.menu #top{display:flex}#top .tb{margin:3px 0;min-height:44px;min-width:110px}
 body.touch:not(.hidectl) #ctlBtn{display:none}
@@ -52,7 +52,7 @@ body.shop #dpad,body.shop #act,body.shop #menuBtn{display:none!important}}
 #cheat .info{margin:6px 2px;font-size:12px;color:#5a2e12;background:#f5dcae;border-radius:4px;padding:5px 7px}#cheat .it{display:inline-flex;align-items:center;gap:2px;margin:2px 6px 2px 0;font-size:11px}#cheat .it button{min-height:30px;padding:4px 7px}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v0.0.0.23</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v0.0.0.24</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -220,7 +220,7 @@ let cssW=960,cssH=640,DPR=1,K=3,view={w:60,h:40},cam={x:0,y:0},portraitTouch=fal
 function fitCanvas(){const b=document.body,touch=b.classList.contains('touch');
   portraitTouch=touch&&innerHeight>innerWidth;
   cssW=innerWidth;cssH=innerHeight;
-  if(portraitTouch&&!b.classList.contains('hidectl'))cssH=Math.max(260,Math.round(innerHeight-Math.max(160,innerHeight*0.2)));
+  if(portraitTouch&&!b.classList.contains('hidectl'))cssH=Math.max(260,Math.round(innerHeight-Math.max(120,innerHeight*0.15)));
   DPR=Math.min(2,window.devicePixelRatio||1);
   cv.width=Math.round(cssW*DPR);cv.height=Math.round(cssH*DPR);cv.style.width=cssW+'px';cv.style.height=cssH+'px';
   document.documentElement.style.setProperty('--ch',cssH+'px');
