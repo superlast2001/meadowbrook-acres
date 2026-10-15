@@ -36,7 +36,7 @@ body.shop #top{display:none}}
 #cheatBadge.show{display:block}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v0.13</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v0.0.0.14</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -636,7 +636,7 @@ function drawDialogue(){if(!dlg)return;const w=Math.min(560,cssW-16),lines=wrapT
     ctx.fillStyle=i==dlg.sel?'#d8443a':'#8a5530';ctx.fillRect(bx+2,by+2,bw-4,24);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(bx+2,by+2,bw-4,2);
     txt(c[0],bx+bw/2,by+19,{s:bw<110?11:13,c:'#fff3d6',a:'center'});});}
 // Rzel sprite (24x36): V-taper bodybuilder, left half bare skin, right half cyber-armor
-const RW=24,RH=38,RC={S:['#6e3a1c','#a35d2c','#cd8a4f','#f2b77f'],A:['#1b1e25','#323843','#4f5765','#8d97a8'],H:['#7d838e','#b3b9c3','#dde1e7','#ffffff'],
+const RW=24,RH=40,RC={S:['#6e3a1c','#a35d2c','#cd8a4f','#f2b77f'],A:['#1b1e25','#323843','#4f5765','#8d97a8'],H:['#7d838e','#b3b9c3','#dde1e7','#ffffff'],
   O:'#24140c',V:'#20242c',RE:'#ff3b3b',CR:'#3fc8a6',CRD:'#23876f',T:'#3ad6c6',PU:'#c46bff',GO:'#f2c53d',GOD:'#a87a18'};
 function rzBody(P,R,o){const {S,A,H,O,V,RE,CR,CRD,T,PU,GO,GOD}=RC,b=o.b||0,lg=o.leg||0,back=o.view=='back';
   const sk=back?A:S,ar=back?S:A; // from behind, the armored side is on the viewer's left
@@ -691,12 +691,12 @@ function rzSide(P,R,o){const {S,A,H,V,RE,CR,T,PU,GO,GOD}=RC,lg=o.leg||0,fl=lg==1
 }
 // Head/mask pixel maps (12 wide, drawn at x=6). h/l/m/d = metal highlight/light/mid/dark, n = navy guard, r = red, g = red glow, c/C = crest
 const RZ_HEAD={
- front:["h..............d","hh............dd",".hl..hhhllm..md.","..hhnlnlmmmmddmc","..hllnllmmmmmdcc","..hlnlnlmmmmmdc.",".hhhhhhhmmmmmmd.","lmgrrnnnnnnrrgmd","lmmnnrnnnnrnnmmd",".lmmlNNNNNNmmmd.","..lmlnnnnnnmmd..","..lmlMMMMMMmmd..","...mlnfnnfnmd...","....mnfnnfnd....",".....dnnnnd....."],
- back:["h......cC......d","hh.....cC.....dd",".hl..hhcClm..md.","..hhhllcCmmmdd..","..hlllcCmmmmmd..","..hlllcCmmmmmd..",".hhlllcCmmmmmdd.","lmhlllcCmmmmmmmd","lmllllcCmmmmmmmd",".lmlllcCmmmmmmd.","..lmllmmmmmmmd..","..lmlmmmmmmmmd..","...mmmmmmmmmd...","....mmmmmmmd....",".....dddddd....."],
- side:["...h............","...hh...........","c...hl..........","cc.hhhlhhh......","ccchllllllmm....",".cchllllllllmd..",".chllllhhhhhhd..","..hlmllnnnnrgd..","..lmmllmnnnrnd..","..lmmmlNNNNNNd..","...mmmlnnnnnnnn.","...mmmlMMMMMMMn.","....mmlnnnnnfn..",".....mdnnnnn...."]};
-function rzHead(P,view,b){const H=RC.H,col={h:H[3],l:H[2],m:H[1],d:H[0],n:'#1e2440',N:'#3c4a70',f:'#f87888',M:'#f83850',r:'#ff3b3b',g:'#ffb4a4',c:RC.CR,C:RC.CRD};
+ front:["...l........m...","..hl........md..",".hl..........md.",".hl..........md.","hl...hlllmm...dm","hl..hxlxlmmm..dm","hl.hllxllmmmp.dm","hhhllxlxlmmmmpdd",".hlllllpmmmmmmdc",".mrrnnnnnnnnrrmc",".mnnrrnnnnrrnnmc",".lmmNNNNNNNNmmd.","..lmnnnnnnnnmd..","..lmnMMMMMMnmd..","...mnfnnnnfnmd..","....mnnnnnnd....",".....dnnnnd.....","......dnnd......"],
+ back:["...l........m...","..hl........md..",".hl..........md.",".hl..........md.","hl...hlcCm....dm","hl..hllcCmmm..dm","hl.hlllcCmmmm.dm","hhhlllpcCpmmmmdd",".hlllllcCmmmmmd.",".mlllllcCmmmmmd.",".mlllllcCmmmmmd.",".lmllllcCmmmmmd.","..lmmmmmmmmmmd..","..lmmmpmmpmmmd..","...mmmmmmmmmd...","....mmmmmmmd....",".....dddddd....."],
+ side:["..........l.....",".........hl.....","........hll.....",".......hll......","c.....hll.......","cc..hhlllll.....","ccchllxlllmm....",".cchlllllllmd...",".chllllppmmmmd..","..hlmllnnnnrrd..","..lmmllnnnnnnd..","..lmmmlNNNNNNNd.","...mmmlnnnnnnnnd","...mmmlnMMMMMMMn","....mmlnnnnnfnn.",".....mdnnnnnnd..",".......dnnnd...."]};
+function rzHead(P,view,b){const col={h:'#d6dbe2',l:'#b7bec8',m:'#8f97a4',d:'#626977',x:'#9aa1ad',p:'#4f5664',n:'#3a4658',N:'#56637a',f:'#f87888',M:'#f83850',r:'#ff3b3b',g:'#ffb4a4',c:RC.CR,C:RC.CRD};
   RZ_HEAD[view].forEach((row,y)=>{for(let x=0;x<row.length;x++){const c=col[row[x]];if(c)P(4+x,y+b,c);}});}
-function makeRzel(){const out=RC.O,sh=(P,R)=>[(x,y,c)=>P(x,y+2,c),(x,y,w,h,c)=>R(x,y+2,w,h,c)];
+function makeRzel(){const out=RC.O,sh=(P,R)=>[(x,y,c)=>P(x,y+4,c),(x,y,w,h,c)=>R(x,y+4,w,h,c)];
   const mk=(key,body,view,b,flip)=>spr(key,RW,RH,(P0,R0)=>{let P=P0,R=R0;if(flip){P=(x,y,c)=>P0(RW-1-x,y,c);R=(x,y,w,h,c)=>R0(RW-x-w,y,w,h,c);}const [p,r]=sh(P,R);body(p,r);rzHead(P,view,b||0);},out);
   for(let f=0;f<2;f++)mk('shopkeeper_'+f,(P,R)=>rzBody(P,R,{view:'front',b:f,arm:'down'}),'front',f);
   for(let f=0;f<3;f++){mk('rzel_down_'+f,(P,R)=>rzBody(P,R,{view:'front',arm:'down',leg:f}),'front');
