@@ -36,7 +36,7 @@ body.shop #top{display:none}}
 #cheatBadge.show{display:block}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v4</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v5</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -66,6 +66,7 @@ const EVENTS = [
 //   ASSETS.tree_0 = 'art/oak.png';  ASSETS.farmer_down_1 = 'art/me_walk1.png';
 // Call listSpriteKeys() in the console to see all keys and sizes. Missing/failed images fall back silently.
 const ASSETS = {};
+// e.g. ASSETS.shopkeeper = 'art/riff.png'; (16x32, replaces both idle frames of Rzel the shopkeeper)
 // ================= DATA =================
 const CROPS = {
   radish:{name:'Radish', seedPrice:20, sell:45, days:3, color:'#e33a5a'},
@@ -147,6 +148,7 @@ function load(){const s=localStorage.getItem('meadowbrook_save');if(!s){game.msg
 const keys={};
 function handleKey(k,e){e=e||{preventDefault(){}};
   if(k=='`'||k=='f2'){e.preventDefault();toggleCheats();return;} if(cheatOpen){if(k=='escape')toggleCheats();return;}
+  if(dlg){if([' ','enter','e','escape','4'].includes(k)){e.preventDefault();closeDlg();}return;}
   if(shopOpen){shopKey(k);return;}
   if('1234'.includes(k)&&k.length==1)G.tool=+k-1;
   if(k=='q'){const l=Object.keys(CROPS);G.seedSel=l[(l.indexOf(G.seedSel)+1)%l.length];}
@@ -156,7 +158,7 @@ function handleKey(k,e){e=e||{preventDefault(){}};
   if(k.startsWith('arrow'))e.preventDefault();}
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;handleKey(k,e);});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-cv.addEventListener('mousedown',e=>{const r=cv.getBoundingClientRect(),i=hotbarHit(e.clientX-r.left,e.clientY-r.top);
+cv.addEventListener('mousedown',e=>{const r=cv.getBoundingClientRect();if(dlg){dlgTap(e.clientX-r.left,e.clientY-r.top);return;}const i=hotbarHit(e.clientX-r.left,e.clientY-r.top);
   if(i>=0&&!shopOpen){G.tool=i;return;}if(!shopOpen)useTool();});
 let showHelp=true;try{if(innerWidth<=900||matchMedia('(orientation: portrait)').matches)showHelp=false;}catch(_){}
 // ================= TOUCH CONTROLS =================
@@ -194,7 +196,7 @@ function initTouch(){if(touchInited){document.body.classList.add('touch');fitCan
     b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.classList.add('on');handleKey(b.dataset.k);});
     for(const t of ['pointerup','pointercancel','pointerleave'])b.addEventListener(t,()=>b.classList.remove('on'));});
   // tap hotbar slots on canvas to pick tool
-  cv.addEventListener('pointerdown',e=>{e.preventDefault();const r=cv.getBoundingClientRect();
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(dlg){dlgTap(e.clientX-r.left,e.clientY-r.top);return;}
     const i=hotbarHit(e.clientX-r.left,e.clientY-r.top);if(i>=0&&!shopOpen)G.tool=i;});
   for(const t of ['touchmove','gesturestart','dblclick'])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
   document.addEventListener('contextmenu',e=>e.preventDefault());
@@ -216,7 +218,7 @@ function useTool(){const [x,y]=front();if(x<0||y<0||x>=W||y>=H)return;const t=ma
   if(G.tool==0){ if(t==8&&!s&&spend(2)){G.soil[k]={wet:false,crop:null,growth:0};puff(x,y,'#8a5a36',8);} }
   else if(G.tool==1){ if(s&&spend(1)){s.wet=true;puff(x,y,'#8fc6ff',10);} }
   else if(G.tool==2){ const si=G.seedSel+'_seed'; if(s&&!s.crop){ if(G.inv[si]>0){G.inv[si]--;s.crop=G.seedSel;s.growth=0;} else game.msg('No '+CROPS[G.seedSel].name+' seeds.');}}
-  else { if(t==5){sleep();return;} if(t==6){shopOpen=true;return;}
+  else { if(t==5){sleep();return;} if(t==6||(x==NPC.x&&y==NPC.y)){talkRzel();return;}
     if(s&&s.crop&&s.growth>=CROPS[s.crop].days){G.inv[s.crop]++;game.msg('Harvested '+CROPS[s.crop].name+'!');puff(x,y,CROPS[s.crop].color,8);s.crop=null;s.growth=0;return;}
     const pi=G.pickups.findIndex(p=>p.x==x&&p.y==y); if(pi>=0){G.inv[G.pickups[pi].item]++;G.pickups.splice(pi,1);} }
 }
@@ -234,7 +236,7 @@ function update(dt){
   for(const b of BUILDINGS){const inside=G.p.x>b.x*TS&&G.p.x<(b.x+b.w)*TS&&G.p.y>b.y*TS&&G.p.y<(b.y+b.h-1)*TS+4;b.alpha+=((inside?0.08:1)-b.alpha)*Math.min(1,dt*8);}
   fx=fx.filter(f=>(f.t-=dt)>0);for(const f of fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=90*dt;}
   if(CHEAT.gold)G.gold=Math.max(G.gold,99999); if(CHEAT.energy)G.energy=G.maxE;
-  if(shopOpen||cheatOpen)return;
+  if(shopOpen||cheatOpen||dlg)return;
   G.time+=dt*10; if(G.time>=26*60){game.msg('You collapsed from exhaustion...');sleep();}
   let dx=0,dy=0;
   if(keys['w']||keys['arrowup']){dy=-1;G.p.dir='up';} if(keys['s']||keys['arrowdown']){dy=1;G.p.dir='down';}
@@ -250,7 +252,7 @@ function update(dt){
   const px=Math.floor(G.p.x/TS),py=Math.floor((G.p.y-3)/TS);
   G.pickups=G.pickups.filter(pk=>{if(pk.x==px&&pk.y==py){G.inv[pk.item]++;game.msg('+1 '+ITEMS[pk.item].name);return false;}return true;});
 }
-function blocked(x,y){if(CHEAT.noclip)return x<4||y<6||x>W*TS-4||y>H*TS-1;for(const [cx,cy] of [[x-5,y-5],[x+5,y-5],[x-5,y+1],[x+5,y+1]]){
+function blocked(x,y){if(Math.floor(x/TS)==NPC.x&&Math.floor((y-2)/TS)==NPC.y)return true;if(CHEAT.noclip)return x<4||y<6||x>W*TS-4||y>H*TS-1;for(const [cx,cy] of [[x-5,y-5],[x+5,y-5],[x-5,y+1],[x+5,y+1]]){
   const tx=Math.floor(cx/TS),ty=Math.floor(cy/TS);if(tx<0||ty<0||tx>=W||ty>=H||SOLID.has(map[ty][tx]))return true;}return false;}
 function tryMove(dx,dy){if(!blocked(G.p.x+dx,G.p.y+dy)){G.p.x+=dx;G.p.y+=dy;}}
 // ================= PROCEDURAL PIXEL ART =================
@@ -443,6 +445,7 @@ function render(){const now=performance.now();
   {const [fx2,fy2]=front(),a=0.55+Math.sin(now/180)*0.25,X=fx2*TS,Y=fy2*TS;ctx.fillStyle='rgba(255,250,220,'+a+')';
    for(const [cx,cy,w,hh] of [[0,0,4,1],[0,0,1,4],[12,0,4,1],[15,0,1,4],[0,15,4,1],[0,12,1,4],[12,15,4,1],[15,12,1,4]])ctx.fillRect(X+cx,Y+cy,w,hh);}
   for(const pk of G.pickups){const sx=pk.x*TS,sy=pk.y*TS,b=Math.sin(now/200+pk.x)*1.5;shadow(sx+8,sy+12,4,1.5,0.3);objs.push({y:sy+10,d:()=>drawS('item_'+pk.item,sx+2,sy+1+b)});}
+  {const f=Math.floor(now/(dlg||shopOpen?180:420))%2;objs.push({y:NPC.y*TS+14,d:()=>{const k=ASSETS.shopkeeper&&SPR.shopkeeper?'shopkeeper':'shopkeeper_'+f;shadow(NPC.x*TS+8,NPC.y*TS+15,7,2,0.3);drawS(k,NPC.x*TS,NPC.y*TS+16-32);}});}
   // player
   const px=Math.round(G.p.x),py=Math.round(G.p.y),fr=moving?[1,0,2,0][Math.floor(walkDist/5)%4]:0;
   shadow(px,py,6,2.2,0.3);objs.push({y:G.p.y,d:()=>drawS('farmer_'+G.p.dir+'_'+fr,px-8,py-19-(moving&&fr==0?1:0))});
@@ -507,6 +510,7 @@ function drawHUD(){ctx.imageSmoothingEnabled=false;
     const hy2=wide?8:72;panel(8,hy2,300,lines.length*17+20);lines.forEach((t,i)=>txt(t,18,hy2+24+i*17,{s:12,b:i==0}));}
   if(msgTime>0){ctx.font='bold 14px monospace';const w=Math.min(cssW-16,ctx.measureText(msgT).width+28);ctx.globalAlpha=Math.min(1,msgTime*2);
     panel(cssW/2-w/2,hy-44,w,36);txt(msgT,cssW/2,hy-21,{s:14,a:'center'});ctx.globalAlpha=1;}
+  drawDialogue();
   if(shopOpen){const w=Math.min(460,cssW-16),fs=w<420?11:14,x=cssW/2-w/2,y=Math.max(8,Math.min(150,cssH/2-130));panel(x,y,w,230);
     txt('GENERAL STORE',x+16,y+30,{s:fs+3,c:'#8a2e1e'});icon('icon_coin',x+w-110,y+14,2);txt(G.gold+'g',x+w-16,y+30,{s:fs+2,a:'right'});
     let i=1;for(const c in CROPS){const kk=CROPS[c],yy=y+50+(i-1)*34;icon('icon_seed_'+c,x+14,yy,2);
@@ -544,9 +548,55 @@ document.getElementById('cheat').addEventListener('click',e=>{const b=e.target.c
 ['pointerdown','touchstart','mousedown'].forEach(t=>document.getElementById('cheat').addEventListener(t,e=>e.stopPropagation()));
 {let taps=[];document.getElementById('ver').addEventListener('pointerdown',e=>{e.stopPropagation();const n=performance.now();taps=taps.filter(t=>n-t<1500);taps.push(n);if(taps.length>=5){taps=[];toggleCheats();}});}
 document.getElementById('bDev').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();toggleCheats();});
+// ================= SHOPKEEPER NPC: Rzel =================
+const NPC={x:40,y:11,name:'Rzel'};let dlg=null;
+function talkRzel(){const L=G.weather=='chocolate'?["Whoa, chocolate's falling from the sky! Sweetest encore ever."]:G.weather=='rain'?["Rain's just the crowd cheering, farmer. Let's shred some seeds!"]:
+  ["Yo, farmer! Ready to rock some seeds?","Sun's out, amps up! What are we planting today?","Name's Rzel. I sell seeds and I play LOUD."];
+  dlg={name:NPC.name,text:L[G.day%L.length]};}
+function closeDlg(){dlg=null;shopOpen=true;}
+function dlgTap(){closeDlg();}
+function wrapText(t,maxW){ctx.font='bold 13px monospace';const out=[];let line='';for(const w of t.split(' ')){const tr=line?line+' '+w:w;if(ctx.measureText(tr).width>maxW&&line){out.push(line);line=w;}else line=tr;}if(line)out.push(line);return out;}
+function drawDialogue(){if(!dlg)return;const w=Math.min(560,cssW-16),lines=wrapText(dlg.text,w-100),h=Math.max(92,lines.length*17+60),x=cssW/2-w/2,
+  y=portraitTouch?cssH-h-8:Math.min(cssH-h-110,cssH*0.62);panel(x,y,w,h);
+  ctx.fillStyle='#c99a62';ctx.fillRect(x+10,y+10,68,72);ctx.fillStyle='#3b2414';ctx.fillRect(x+10,y+10,68,1);ctx.fillRect(x+10,y+10,1,72);
+  const s=SPR[ASSETS.shopkeeper?'shopkeeper':'shopkeeper_0'];if(s)ctx.drawImage(s,0,0,16,18,x+12,y+12,64,72);
+  txt(dlg.name,x+88,y+26,{s:15,c:'#8a2e1e'});lines.forEach((l,i)=>txt(l,x+88,y+50+i*17,{s:13}));
+  if(Math.floor(performance.now()/400)%2)txt('USE \u25B6',x+w-14,y+h-10,{s:11,a:'right',c:'#6b3a1a'});}
+function makeRzel(){for(let f=0;f<2;f++)spr('shopkeeper_'+f,16,32,(P,R)=>{const b=f;// bob
+  const W='#f4f4f2',WS='#b9bec8',V='#1c2026',GR='#5dff7a',GL='#b8ffc4',SC='#2b2533',SC2='#4a4058',SK='#d08a50',SKD='#94552c',SKL='#f0b47c',
+        PA='#a3a8b0',PAD='#767b84',PAL='#c9ccd2',BO='#26262c',BL='#5c5c66',CH='#c9cdd5',GU='#e0381e',GO='#ff9424',GY='#ffd640',SI='#dfe3ea',NK='#5a3a26';
+  // boots + chains (no bob)
+  R(3,27,4,5,BO);R(9,27,4,5,BO);R(2,31,5,1,BO);R(9,31,5,1,BO);P(4,28,BL);P(5,29,BL);P(4,30,BL);P(10,28,BL);P(11,29,BL);P(10,30,BL);P(3,29,CH);P(12,29,CH);P(2,30,CH);P(13,30,CH);P(3,31,'#6c6c76');P(13,31,'#6c6c76');
+  // baggy gray pants
+  R(3,20+b,10,8-b,PA);R(2,23+b,3,5-b,PA);R(11,23+b,3,5-b,PA);R(7,24+b,2,4-b,PAD);R(3,21+b,1,7-b,PAD);R(12,21+b,1,7-b,PAD);R(5,22+b,1,4,PAL);R(10,22+b,1,4,PAL);R(3,20+b,10,1,'#2a2530');
+  // scarf tail flowing behind left shoulder
+  R(0,11+b,2,2,SC);R(0,13+b,1,3,SC);
+  // shoulders / arms with bicep highlights, separated from torso by a dark seam
+  R(1,12+b,3,7,SK);R(12,12+b,3,5,SK);R(1,12+b,3,1,SKL);R(12,12+b,3,1,SKL);P(2,14+b,SKL);P(13,14+b,SKL);R(1,16+b,1,3,SKD);R(14,13+b,1,4,SKD);R(4,13+b,1,6,SKD);R(11,13+b,1,4,SKD);
+  // chest: two pecs + six-pack
+  R(5,12+b,6,8,SK);R(5,12+b,2,2,SKL);R(8,12+b,2,2,SKL);R(5,14+b,6,1,SKD);R(7,12+b,1,8,SKD);
+  for(const yy of [15,17]){R(5,yy+b,2,1,SKL);R(8,yy+b,2,1,SKL);R(5,yy+1+b,6,1,SKD);}R(5,19+b,6,1,SK);P(7,19+b,SKD);
+  // guitar neck: dark fretboard with silver frets up to a pointed silver headstock past the right shoulder
+  for(let i=0;i<7;i++){P(8+i,19-i+b,NK);P(9+i,19-i+b,i%2?SI:'#8a5a32');}R(14,10+b,2,2,SI);P(15,9+b,SI);P(15,8+b,'#ffffff');P(13,10+b,SI);
+  // flame body with silver blade edge (lower-left)
+  const rows=[[16,3,4,0,0,0,0],[17,2,6,3,4,0,0],[18,1,8,2,6,3,4],[19,1,9,2,7,3,5],[20,1,9,2,7,3,6],[21,2,8,3,6,4,5],[22,2,6,3,4,0,0],[23,3,5,0,0,0,0]];
+  for(const [y,a1,a2,o1,o2,y1,y2] of rows){R(a1,y+b,a2-a1+1,1,GU);if(o2)R(o1,y+b,o2-o1+1,1,GO);if(y2)R(y1,y+b,y2-y1+1,1,GY);}
+  for(const [x,y] of [[2,15],[1,16],[0,17],[0,18],[0,19],[0,20],[0,21],[1,22],[1,23],[2,24],[0,24]])P(x,y+b,SI);P(6,21+b,'#2a2a30');P(7,21+b,'#2a2a30');R(5,19+b,2,1,SI);
+  R(12,13+b,2,2,SKL);P(14,12+b,SKL); // fretting hand on neck
+  const hy=f?20:18;R(7,hy+b,2,2,SKL);P(9,hy+b+1,SK); // strumming hand moves
+  // dark scarf
+  R(3,10+b,10,2,SC);R(4,10+b,8,1,SC2);
+  // white mask with outward horns + crest spike, dark visor, glowing green eyes
+  R(4,3+b,8,7,W);R(5,2+b,6,1,W);R(4,8+b,8,2,WS);R(4,3+b,1,6,WS);
+  P(3,3+b,W);P(2,2+b,W);P(2,1+b,W);P(1,0+b,W);P(3,2+b,WS);
+  P(12,3+b,WS);P(13,2+b,W);P(13,1+b,W);P(14,0+b,W);P(12,2+b,W);
+  R(7,0+b,2,2,W);P(8,1+b,WS);
+  R(5,5+b,6,2,V);P(6,5+b,GR);P(9,5+b,GR);P(5,5+b,GL);P(10,5+b,GL);P(6,6+b,GR);P(9,6+b,GR);R(7,8+b,2,1,V);
+ },'#14101a');}
+
 // ================= LOOP =================
 let last=performance.now();
 function loop(t){const dt=Math.min(0.05,(t-last)/1000);last=t;update(dt);render();requestAnimationFrame(loop);}
-makeSprites();makeRoofs();
+makeSprites();makeRzel();makeRoofs();
 newGame(); if(localStorage.getItem('meadowbrook_save'))load(); snapCam(); requestAnimationFrame(loop);
 </script></body></html>

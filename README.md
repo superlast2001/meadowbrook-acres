@@ -26,3 +26,6 @@ Saves from v1/v2 are migrated automatically onto the new map.
 
 ## Dev cheat menu (v4)
 Press ` or F2 (desktop), tap the version label 5 times quickly, or tap DEV in the touch panel.
+
+## Shopkeeper (v5)
+Rzel, a masked rocker with a flame guitar, stands behind the shop counter (2-frame strum idle). Use Hand on him or the counter for a greeting, then the shop opens. Override his art with `ASSETS.shopkeeper` (16x32).
