@@ -34,14 +34,16 @@ body.shop #top{display:none}}
 #cheat button.on{background:#4f8a3c;box-shadow:inset 0 -3px 0 #2f5a24,inset 0 2px 0 #7cc35a}
 #cheatBadge{display:none;position:fixed;z-index:21;left:50%;top:calc(6px + env(safe-area-inset-top));transform:translateX(-50%);background:#b5452f;color:#fff;border:2px solid #2b1a0e;border-radius:5px;font:bold 11px monospace;padding:2px 7px;pointer-events:none}
 #cheatBadge.show{display:block}
+#cheat .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px}#cheat .tabs button{flex:1 1 22%;padding:8px 4px}#cheat .tabs button.sel{background:#d8443a;box-shadow:inset 0 -3px 0 #8a2e1e}
+#cheat .info{margin:6px 2px;font-size:12px;color:#5a2e12;background:#f5dcae;border-radius:4px;padding:5px 7px}#cheat .it{display:inline-flex;align-items:center;gap:2px;margin:2px 6px 2px 0;font-size:11px}#cheat .it button{min-height:30px;padding:4px 7px}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v0.0.0.21</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v0.0.0.22</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
-<div id="top"><div class="tb" data-k="h">Help</div><div class="tb" data-k="p">Save</div><div class="tb" data-k="l">Load</div><div class="tb" id="bDev">DEV</div></div>
-<div id="shopUI"><div class="tb" data-k="1">Buy 1</div><div class="tb" data-k="2">Buy 2</div><div class="tb" data-k="3">Buy 3</div><div class="tb" data-k="s">Sell all</div><div class="tb" data-k="escape">Leave</div></div></div>
+<div id="top"><div class="tb" data-k="h">Help</div><div class="tb" data-k="p">Save</div><div class="tb" data-k="l">Load</div><div class="tb" data-k="r">Social</div><div class="tb" id="bDev">DEV</div></div>
+<div id="shopUI"><div class="tb" data-k="1">Buy 1</div><div class="tb" data-k="2">Buy 2</div><div class="tb" data-k="3">Buy 3</div><div class="tb" data-k="4">Bouquet</div><div class="tb" data-k="5">Pendant</div><div class="tb" data-k="s">Sell all</div><div class="tb" data-k="escape">Leave</div></div></div>
 <script>
 "use strict";
 // ================= WEATHER / EVENT SYSTEM (data-driven) =================
@@ -55,9 +57,11 @@ const EVENTS = [
     onDayStart:g=>{ waterAll(g); for(let i=0;i<6;i++) spawnPickup(g,'chocolate'); g.msg('Chocolate rain! Collect the treats.'); },
     onTick:(g,dt)=>{ if(Math.random()<dt*0.02) spawnPickup(g,'chocolate'); } },
   { id:'rain', name:'Rain', tint:'rgba(30,40,80,0.22)',
-    trigger:(day,r)=> r<0.3,
+    trigger:(day,r)=> season()!='winter' && r<(season()=='summer'?0.15:0.3),
     particle:{color:'#9cc4ff', shape:'drop', count:160, speed:10},
     onDayStart:g=>{ waterAll(g); g.msg('Rain today - crops are watered.'); } },
+  { id:'snow', name:'Snow', tint:'rgba(200,220,255,0.10)', trigger:(day,r)=> season()=='winter' && r<0.45,
+    particle:{color:'#ffffff', shape:'flake', count:130, speed:3}, onDayStart:g=>{ g.msg('Snow is falling - crops rest in winter.'); } },
   { id:'sunny', name:'Sunny', tint:null, trigger:()=>true, particle:null }
 ];
 // ================= ASSET OVERRIDES =================
@@ -96,7 +100,7 @@ const CROPS = {
   corn:  {name:'Corn',   seedPrice:40, sell:100,days:5, color:'#f2d23a'},
   melon: {name:'Melon',  seedPrice:80, sell:260,days:7, color:'#3fae4a'}
 };
-const ITEMS = {chocolate:{name:'Chocolate', sell:60, color:'#5a2e12'}};
+const ITEMS = {chocolate:{name:'Chocolate', sell:60, color:'#5a2e12'}, bouquet:{name:'Bouquet', sell:0, color:'#e86a9a'}, pendant:{name:'Moonstone Pendant', sell:0, color:'#9ad8ff'}};
 const SAVE_V=3, TS=16, W=60, H=45, OX=10, OY=8, cv=document.getElementById('c'), ctx=cv.getContext('2d');
 // tiles: 0 grass,1 path,2 water,3 wall,4 floor,5 bed,6 counter,7 tree,8 farmland(tillable grass),9 door,10 fence,11 bush,12 rock
 let map=[];
@@ -112,7 +116,7 @@ function buildMap(){const R=rng(1337);
     const ex=(x-46)/5.5,ey=(y-29)/3.6; if(ex*ex+ey*ey<1)t=2;
     map[y].push(t);}}
   rect(13,10,8,6,3,4); map[14][16]=9; map[11][14]=5; map[11][15]=5;   // house + bed
-  rect(36,10,9,6,3,4); map[14][40]=9; for(let x=38;x<=42;x++)map[12][x]=6; // shop + counter
+  buildShop(); // v22: walkable shop room + NPC cottages
   for(let x=34;x<48;x+=3){map[20][x]=7;} map[15][16]=1; map[15][40]=1;
   for(let x=12;x<=27;x++){if(x!=19&&x!=20)map[17][x]=10; map[31][x]=10;} for(let y=17;y<=31;y++){map[y][12]=10;map[y][27]=10;}
   map[17][19]=1;map[17][20]=1;
@@ -134,8 +138,8 @@ const tileAt=(x,y)=>(x<0||y<0||x>=W||y>=H)?7:map[y][x];
 let G;
 function newGame(){ buildMap(); G={v:SAVE_V,day:1,time:6*60,gold:150,energy:100,maxE:100,
   p:{x:16*TS+8,y:16*TS+10,dir:'down'}, tool:0, soil:{}, pickups:[],
-  inv:{radish_seed:5,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0}, seedSel:'radish',
-  weather:'sunny',rz:{mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'},rzel:{pts:0,talkDay:0,giftDay:0}}; startDay(); }
+  inv:{radish_seed:5,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0,bouquet:0,pendant:0}, seedSel:'radish',
+  weather:'sunny',rz:{mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'},rzel:relDefaults(),rel:{mabel:relDefaults(),pip:relDefaults()},vill:{}}; startDay(); }
 const game={msg(t){msgT=t;msgTime=3;}};
 let msgT='',msgTime=0,shopOpen=false,particles=[],walkDist=0,moving=false;
 function ev(){return EVENTS.find(e=>e.id==G.weather)||EVENTS[EVENTS.length-1];}
@@ -154,10 +158,10 @@ function save(q){localStorage.setItem('meadowbrook_save',JSON.stringify(G));if(!
 function migrate(s){
   const d={day:1,time:6*60,gold:150,energy:100,maxE:100,tool:0,soil:{},pickups:[],seedSel:'radish',weather:'sunny'};
   for(const k in d)if(s[k]===undefined||s[k]===null)s[k]=d[k];
-  s.inv=Object.assign({radish_seed:0,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0},s.inv||{});
+  s.inv=Object.assign({radish_seed:0,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0,bouquet:0,pendant:0},s.inv||{});
   if(!CROPS[s.seedSel])s.seedSel='radish';
   if(!s.rz||!isFinite(s.rz.x)||!['counter','follow','stay'].includes(s.rz.mode))s.rz={mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'};
-  s.rzel=Object.assign({pts:0,talkDay:0,giftDay:0},s.rzel||{});
+  s.rzel=fixRel(s.rzel);s.rel=s.rel||{};for(const id of ['mabel','pip'])s.rel[id]=fixRel(s.rel[id]);if(!s.vill||typeof s.vill!='object')s.vill={};
   if(!s.v||s.v<3){const soil={};for(const k in s.soil){const [x,y]=k.split(',').map(Number);soil[(x+OX)+','+(y+OY)]=s.soil[k];}s.soil=soil;
     s.pickups=(s.pickups||[]).map(p=>({x:p.x+OX,y:p.y+OY,item:p.item}));
     if(s.p)s.p={x:s.p.x/2+OX*TS,y:s.p.y/2+OY*TS+2,dir:s.p.dir||'down'};}
@@ -173,8 +177,10 @@ function load(){const s=localStorage.getItem('meadowbrook_save');if(!s){game.msg
 const keys={};
 function handleKey(k,e){e=e||{preventDefault(){}};
   if(k=='`'||k=='f2'){e.preventDefault();toggleCheats();return;} if(cheatOpen){if(k=='escape')toggleCheats();return;}
+  if(socialOpen){if(k=='r'||k=='escape'||k==' '||k=='enter')socialOpen=false;return;}
   if(dlg){dlgKey(k,e);return;}
   if(shopOpen){shopKey(k);return;}
+  if(k=='r'){socialOpen=true;return;}
   if('1234'.includes(k)&&k.length==1)G.tool=+k-1;
   if(k=='q'){const l=Object.keys(CROPS);G.seedSel=l[(l.indexOf(G.seedSel)+1)%l.length];}
   if(k==' '){e.preventDefault();useTool();}
@@ -183,7 +189,7 @@ function handleKey(k,e){e=e||{preventDefault(){}};
   if(k.startsWith('arrow'))e.preventDefault();}
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;handleKey(k,e);});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-cv.addEventListener('mousedown',e=>{const r=cv.getBoundingClientRect();if(dlg){dlgTap(e.clientX-r.left,e.clientY-r.top);return;}const i=hotbarHit(e.clientX-r.left,e.clientY-r.top);
+cv.addEventListener('mousedown',e=>{const r=cv.getBoundingClientRect();if(socialOpen){socialOpen=false;return;}if(dlg){dlgTap(e.clientX-r.left,e.clientY-r.top);return;}const i=hotbarHit(e.clientX-r.left,e.clientY-r.top);
   if(i>=0&&!shopOpen){G.tool=i;return;}if(!shopOpen)useTool();});
 let showHelp=true;try{if(innerWidth<=900||matchMedia('(orientation: portrait)').matches)showHelp=false;}catch(_){}
 // ================= TOUCH CONTROLS =================
@@ -221,7 +227,7 @@ function initTouch(){if(touchInited){document.body.classList.add('touch');fitCan
     b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.classList.add('on');handleKey(b.dataset.k);});
     for(const t of ['pointerup','pointercancel','pointerleave'])b.addEventListener(t,()=>b.classList.remove('on'));});
   // tap hotbar slots on canvas to pick tool
-  cv.addEventListener('pointerdown',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(dlg){dlgTap(e.clientX-r.left,e.clientY-r.top);return;}
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(socialOpen){socialOpen=false;return;}if(dlg){dlgTap(e.clientX-r.left,e.clientY-r.top);return;}
     const i=hotbarHit(e.clientX-r.left,e.clientY-r.top);if(i>=0&&!shopOpen)G.tool=i;});
   for(const t of ['touchmove','gesturestart','dblclick'])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
   document.addEventListener('contextmenu',e=>e.preventDefault());
@@ -243,9 +249,9 @@ function useTool(){const [x,y]=front();if(x<0||y<0||x>=W||y>=H)return;const t=ma
   if(G.tool==0){ if(t==8&&!s&&spend(2)){G.soil[k]={wet:false,crop:null,growth:0};puff(x,y,'#8a5a36',8);} }
   else if(G.tool==1){ if(s&&spend(1)){s.wet=true;puff(x,y,'#8fc6ff',10);} }
   else if(G.tool==2){ const si=G.seedSel+'_seed'; if(s&&!s.crop){ if(G.inv[si]>0){G.inv[si]--;s.crop=G.seedSel;s.growth=0;} else game.msg('No '+CROPS[G.seedSel].name+' seeds.');}}
-  else { if(t==5){sleep();return;} {const [rx,ry]=rzTile();if(x==rx&&y==ry){talkRzel();return;}}
-    if(t==6){if(rzS().mode=='counter')talkRzel();else game.msg('Rzel is out. (Sign: "Back soon!")');return;}
-    if(s&&s.crop&&s.growth>=CROPS[s.crop].days){G.inv[s.crop]++;game.msg('Harvested '+CROPS[s.crop].name+'!');puff(x,y,CROPS[s.crop].color,8);s.crop=null;s.growth=0;return;}
+  else { if(t==5){sleep();return;} {const vn=npcAt(x,y);if(vn){talkNPC(vn);return;}}
+    if(t==6||t==18){if(rzAtCounter())talkRzel();else game.msg(shopClosedMsg());return;}
+    if(s&&s.crop&&s.growth>=CROPS[s.crop].days){G.inv[s.crop]++;game.msg('Harvested '+CROPS[s.crop].name+'!');npcReact('harvest');puff(x,y,CROPS[s.crop].color,8);s.crop=null;s.growth=0;return;}
     const pi=G.pickups.findIndex(p=>p.x==x&&p.y==y); if(pi>=0){G.inv[G.pickups[pi].item]++;G.pickups.splice(pi,1);} }
 }
 function shopKey(k){const l=Object.keys(CROPS);
@@ -259,11 +265,12 @@ function clampCam(){const mw=W*TS,mh=H*TS;
   cam.y=view.h>=mh?(mh-view.h)/2:Math.max(0,Math.min(mh-view.h,cam.y));}
 function update(dt){
   if(msgTime>0)msgTime-=dt;
+  updateTown(dt);
   for(const b of BUILDINGS){const inside=G.p.x>b.x*TS&&G.p.x<(b.x+b.w)*TS&&G.p.y>b.y*TS&&G.p.y<(b.y+b.h-1)*TS+4;b.alpha+=((inside?0.08:1)-b.alpha)*Math.min(1,dt*8);}
   fx=fx.filter(f=>(f.t-=dt)>0);for(const f of fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=90*dt;}
   if(CHEAT.gold)G.gold=Math.max(G.gold,99999); if(CHEAT.energy)G.energy=G.maxE;
-  if(shopOpen||cheatOpen||dlg)return;
-  updateRzel(dt);
+  if(shopOpen||cheatOpen||dlg||socialOpen)return;
+  updateRzel(dt);updateNPCs(dt);
   G.time+=dt*10; if(G.time>=26*60){game.msg('You collapsed from exhaustion...');sleep();}
   let dx=0,dy=0;
   if(keys['w']||keys['arrowup']){dy=-1;G.p.dir='up';} if(keys['s']||keys['arrowdown']){dy=1;G.p.dir='down';}
@@ -425,7 +432,7 @@ function makeRoofs(){for(const b of BUILDINGS){const w=b.w*TS+8,h=(b.h)*TS+12,[d
     if(b.id=='house'){const cx=w-30;R(cx,0,10,top+8,'#7a6e6a');R(cx,0,10,2,'#5a504c');for(let y=3;y<top+8;y+=3)for(let x=cx+(y%2)*2;x<cx+10;x+=4)P(x,y,'#9a8e88');
       const dx=Math.floor(w/2)-9;R(dx,top+14,18,16,d);R(dx+1,top+15,16,14,'#f1e3c6');R(dx+3,top+17,12,10,'#4a2c18');R(dx+4,top+18,10,8,'#9fd3f0');R(dx+4,top+18,10,3,'#d6f0ff');R(dx+8,top+18,2,8,'#4a2c18');
       for(let i=0;i<10;i++){R(dx-2+i,top+14-i,22-2*i,1,i%3==0?l:m);} }
-    else{for(let x=4;x<w-4;x+=8){R(x,h-12,4,7,'#f1e3c6');R(x+4,h-12,4,7,'#c8453a');}R(2,h-13,w-4,1,d);}
+    else if(b.id=='shop'){for(let x=4;x<w-4;x+=8){R(x,h-12,4,7,'#f1e3c6');R(x+4,h-12,4,7,'#c8453a');}R(2,h-13,w-4,1,d);}
   });}}
 function drawS(k,x,y){const s=SPR[k];if(s)ctx.drawImage(s,Math.round(x),Math.round(y));}
 function shadow(x,y,rx,ry,a){ctx.fillStyle='rgba(20,30,10,'+(a||0.25)+')';ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill();}
@@ -442,12 +449,13 @@ function drawGround(t,x,y,sx,sy,now){const h=hash(x,y);
     if(tileAt(x-1,y)!=2){f('#c9b07a',0,0,2,16);f('#bfe3f8',2,0,1,16);}
     if(tileAt(x+1,y)!=2){f('#c9b07a',14,0,2,16);f('#bfe3f8',13,0,1,16);}
     return;}
+  if(t>=13&&t<=19){drawS('floor',sx,sy);if(t==15){drawS('rug',sx,sy);return;}if(t==19){drawS(tileAt(x-1,y)==19?'bed_r':'bed_l',sx,sy);return;}drawS({13:'shelf',14:'crate',16:'plant',17:'table',18:'gate'}[t],sx,sy);return;}
   if(t==4||t==5||t==6){drawS('floor',sx,sy);if(t==5)drawS(tileAt(x-1,y)==5?'bed_r':'bed_l',sx,sy);if(t==6)drawS('counter',sx,sy);return;}
   if(t==9){drawS('floor',sx,sy);drawS('door',sx,sy);return;}
   if(t==3){const b=bldAt(x,y);if(b&&y==b.y+b.h-1)drawS((x==b.x+1||x==b.x+b.w-2||(x==b.x+b.w-3&&b.w>8))?'window_'+b.id:'facade_'+b.id,sx,sy);
     else if(b&&y==b.y)drawS('wall_in',sx,sy);else drawS('wall_top',sx,sy);}}
 function cropStage(s){const d=CROPS[s.crop].days;return s.growth>=d?4:s.growth<=0?0:Math.min(3,1+Math.floor(s.growth/d*3));}
-function render(){const now=performance.now();
+function render(){const now=performance.now();SEAS=season();
   ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#1d3a18';ctx.fillRect(0,0,cv.width,cv.height);
   const camX=Math.round(cam.x*K)/K,camY=Math.round(cam.y*K)/K;
   ctx.setTransform(K,0,0,K,-Math.round(cam.x*K),-Math.round(cam.y*K));
@@ -477,21 +485,21 @@ function render(){const now=performance.now();
   const px=Math.round(G.p.x),py=Math.round(G.p.y),fr=moving?[1,0,2,0][Math.floor(walkDist/5)%4]:0;
   shadow(px,py,6,2.2,0.3);objs.push({y:G.p.y,d:()=>{const fs=SPR.farmer_sheet;if(fs){const row={down:0,up:1,left:2,right:3}[G.p.dir]||0,col=moving?[1,2,3,2][Math.floor(walkDist/5)%4]:0,bob=moving?0:(Math.floor(now/700)%2)/3;
     ctx.imageSmoothingEnabled=false;ctx.drawImage(fs,col*48,row*72,48,72,px-8,py-23+bob,16,24);}else drawS('farmer_'+G.p.dir+'_'+fr,px-8,py-19-(moving&&fr==0?1:0));}});
+  drawWorldExtras(objs,now);
   objs.sort((a,b)=>a.y-b.y);for(const o of objs)o.d();
   for(const f of fx){ctx.fillStyle=f.col;ctx.fillRect(Math.round(f.x),Math.round(f.y),1,1);}
   // weather particles (world space)
-  const e=ev();if(e.particle){ctx.fillStyle=e.particle.color;ctx.globalAlpha=0.75;for(const q of particles){const qx=Math.round(q.x),qy=Math.round(q.y);
-    if(e.particle.shape=='drop'){ctx.fillRect(qx,qy,1,4);}else if(e.particle.shape=='flake'){ctx.fillRect(qx,qy,1,1);}else ctx.fillRect(qx,qy,2,2);}ctx.globalAlpha=1;}
+  // v22: weather renders outdoors only; indoors you just see rain on the windows
+  const e=ev();if(e.particle&&!INB){ctx.fillStyle=e.particle.color;ctx.globalAlpha=0.75;for(const q of particles){const qx=Math.round(q.x),qy=Math.round(q.y);
+    if(e.particle.shape=='drop'){ctx.fillRect(qx,qy,1,4);}else if(e.particle.shape=='flake'){ctx.fillRect(qx+Math.round(Math.sin(now/500+q.s*9)*2),qy,2,2);}else ctx.fillRect(qx,qy,2,2);}ctx.globalAlpha=1;}
+  else if(e.particle&&INB&&e.particle.shape=='drop')drawWindowRain(now);
   // ---- screen space ----
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(e.tint){ctx.fillStyle=e.tint;ctx.fillRect(0,0,cssW,cssH);}
-  const hr=G.time/60,ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
-  const dusk=ss(16.5,19,hr)*(1-ss(19.5,21.5,hr)),night=ss(18.5,22,hr),dawn=1-ss(6,7.5,hr);
-  const cr=Math.round(255-dusk*8-night*175-dawn*50),cg=Math.round(255-dusk*55-night*165-dawn*40),cb=Math.round(255-dusk*105-night*85-dawn*5);
-  if(cr<255||cg<255||cb<255){ctx.globalCompositeOperation='multiply';ctx.fillStyle='rgb('+cr+','+cg+','+cb+')';ctx.fillRect(0,0,cssW,cssH);ctx.globalCompositeOperation='source-over';}
+  if(e.tint&&!INB){ctx.fillStyle=e.tint;ctx.fillRect(0,0,cssW,cssH);}
+  drawLighting();
   // soft vignette
   const vg=ctx.createRadialGradient(cssW/2,cssH/2,Math.min(cssW,cssH)*0.45,cssW/2,cssH/2,Math.max(cssW,cssH)*0.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.28)');ctx.fillStyle=vg;ctx.fillRect(0,0,cssW,cssH);
-  drawHUD();}
+  drawBubbles();drawHUD();}
 // ================= HUD =================
 const INK='#3b2414';
 function panel(x,y,w,h){x=Math.round(x);y=Math.round(y);w=Math.round(w);h=Math.round(h);
@@ -509,7 +517,7 @@ function drawHUD(){ctx.imageSmoothingEnabled=false;
   // clock
   const cw=narrow?158:180,cx=cssW-cw-8,cy=touchLand?50:8;panel(cx,cy,cw,74);
   const hh=Math.floor(G.time/60)%24,mm=Math.floor(G.time%60/10)*10,ap=hh<12?'am':'pm',h12=(hh%12)||12;
-  txt('Day '+G.day,cx+12,cy+26,{s:16});txt(h12+':'+String(mm).padStart(2,'0')+' '+ap,cx+12,cy+46,{s:16,c:'#6b3a1a'});txt(ev().name,cx+12,cy+64,{s:11,b:false});
+  txt('Day '+G.day,cx+12,cy+26,{s:16});txt(h12+':'+String(mm).padStart(2,'0')+' '+ap,cx+12,cy+46,{s:16,c:'#6b3a1a'});txt(ev().name+' \u00b7 '+cap1(season())+' '+dayOfSeason()+(isHalloween()?' \u2620':''),cx+12,cy+64,{s:11,b:false});
   ctx.fillStyle='#c99a62';ctx.fillRect(cx+cw-46,cy+12,36,36);ctx.fillStyle='#4a2c18';ctx.fillRect(cx+cw-46,cy+12,36,1);ctx.fillRect(cx+cw-46,cy+12,1,36);
   icon('wx_'+(SPR['wx_'+G.weather]?G.weather:'sunny'),cx+cw-44,cy+14,2);
   // gold
@@ -534,16 +542,13 @@ function drawHUD(){ctx.imageSmoothingEnabled=false;
     icon('icon_seed_'+c,x+2,iy+7,1);txt(String(G.inv[c+'_seed']),x+20,iy+20,{s:12});
     ctx.fillStyle=CROPS[c].color;ctx.fillRect(x+5,iy+32,10,10);ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(x+6,iy+33,3,3);txt(String(G.inv[c]),x+20,iy+43,{s:12,c:'#6b3a1a'});k++;}
   {const x=ix+7+3*colw;icon('item_chocolate',x+2,iy+12,1);txt(String(G.inv.chocolate),x+18,iy+21,{s:12});txt(narrow?'choc':'choco',x+2,iy+43,{s:10,b:false});}
-  if(showHelp){const lines=['CONTROLS (H to hide)','WASD/Arrows: move','1-4: Hoe/Water/Seeds/Hand','Space/Click: use tool on tile ahead','Q: cycle seed type','Hand on bed: sleep (ends day)','Hand on store counter: shop','P: save   L: load','Till farm soil, plant, water daily.','Crops grow 1 stage per watered day.'];
+  if(showHelp){const lines=['CONTROLS (H to hide)','WASD/Arrows: move','1-4: Hoe/Water/Seeds/Hand','Space/Click: use tool on tile ahead','Q: cycle seed type','Hand on bed: sleep (ends day)','Hand on store counter/NPC: talk','R: relationships  `: dev menu','P: save   L: load','Till farm soil, plant, water daily.','Crops grow 1 stage per watered day.'];
     const hy2=wide?8:72;panel(8,hy2,300,lines.length*17+20);lines.forEach((t,i)=>txt(t,18,hy2+24+i*17,{s:12,b:i==0}));}
   if(msgTime>0){ctx.font='bold 14px monospace';const w=Math.min(cssW-16,ctx.measureText(msgT).width+28);ctx.globalAlpha=Math.min(1,msgTime*2);
     panel(cssW/2-w/2,hy-44,w,36);txt(msgT,cssW/2,hy-21,{s:14,a:'center'});ctx.globalAlpha=1;}
   drawDialogue();
-  if(shopOpen){const w=Math.min(460,cssW-16),fs=w<420?11:14,x=cssW/2-w/2,y=Math.max(8,Math.min(150,cssH/2-130));if(rzS().mode=='counter'&&cssW-(x+w)>=110)drawVN(0,y+236,Math.min(cssH*0.5,300),x+w+12);panel(x,y,w,230);
-    txt('GENERAL STORE',x+16,y+30,{s:fs+3,c:'#8a2e1e'});icon('icon_coin',x+w-110,y+14,2);txt(G.gold+'g',x+w-16,y+30,{s:fs+2,a:'right'});
-    let i=1;for(const c in CROPS){const kk=CROPS[c],yy=y+50+(i-1)*34;icon('icon_seed_'+c,x+14,yy,2);
-      txt(i+') '+kk.name+' seed  '+kk.seedPrice+'g',x+52,yy+15,{s:fs});txt(kk.days+' days, sells '+kk.sell+'g',x+52,yy+29,{s:fs-2,b:false,c:'#6b3a1a'});i++;}
-    txt('S) Sell all crops & chocolate',x+16,y+170,{s:fs});txt('E / Esc) Leave',x+16,y+200,{s:fs});}}
+  drawSocial();
+  if(shopOpen)drawShop();}
 // ================= DEV CHEAT MENU (` or F2; tap version label 5x; DEV button) =================
 const CHEAT={gold:false,energy:false,noclip:false,speed:false};let cheatOpen=false;
 const TELE={house:[16,13],farm:[19,22],shop:[40,13],pond:[46,24]};
@@ -580,7 +585,7 @@ document.getElementById('cheat').addEventListener('click',e=>{const b=e.target.c
 {let taps=[];document.getElementById('ver').addEventListener('pointerdown',e=>{e.stopPropagation();const n=performance.now();taps=taps.filter(t=>n-t<1500);taps.push(n);if(taps.length>=5){taps=[];toggleCheats();}});}
 document.getElementById('bDev').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();toggleCheats();});
 // ================= SHOPKEEPER NPC: Rzel (counter / follow / stay) =================
-const NPC={x:40,y:11,name:'Rzel'},HOME_X=NPC.x*TS+8,HOME_Y=NPC.y*TS+14;let rzVX=0,rzVY=0,rzIdleT=0;let dlg=null,rzTrail=[],rzStuck=0,rzMoving=false,rzWalk=0;
+const NPC={x:40,y:8,name:'Rzel'},HOME_X=NPC.x*TS+8,HOME_Y=NPC.y*TS+14;let rzVX=0,rzVY=0,rzIdleT=0;let dlg=null,rzTrail=[],rzStuck=0,rzMoving=false,rzWalk=0;
 function rzS(){if(!G.rz||!isFinite(G.rz.x))G.rz={mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'};return G.rz;}
 function rzTile(){const r=rzS();return [Math.floor(r.x/TS),Math.floor((r.y-2)/TS)];}
 // ---- Friendship: 100 pts per heart (0-5). Talk once/day +15. One gift/day: chocolate (favorite) +80, melon/corn (liked) +45, radish (neutral) +20.
@@ -653,9 +658,11 @@ function updateRzel(dt){const r=rzS();rzMoving=false;if(r.mode!='follow')return;
   rzFace(r.x-ox,r.y-oy);}
 
 function drawRzel(objs,now){const r=rzS(),x=Math.round(r.x),y=Math.round(r.y);
+  if(RT.rzel.hidden){if(r.mode=='counter'&&!rzAtCounter())objs.push({y:COUNTER_Y*TS+13,d:()=>drawS('sign_out',40*TS-2,COUNTER_Y*TS-6)});return;}
+  if(isHalloween())objs.push({y:r.y+0.5,d:()=>drawS('witchhat',x-7,y-37+((rzMoving?0:Math.floor(now/700)%2)/3))});
   objs.push({y:r.y,d:()=>{shadow(x,y+1,10,2.6,0.3);let k;
     const rw=SPR.rzel_world;
-    if(rw){const row={down:0,up:1,left:2,right:3}[r.mode=='counter'?'down':r.dir]||0,col=rzMoving?[1,2,3,2][Math.floor(rzWalk/6)%4]:0,fw=rw.width/4,fh=rw.height/4,hh=32,ww=fw*hh/fh,bob=rzMoving?0:(Math.floor(now/(dlg||shopOpen?400:700))%2)/3;
+    if(rw){const row={down:0,up:1,left:2,right:3}[rzAtCounter()?'down':r.dir]||0,col=rzMoving?[1,2,3,2][Math.floor(rzWalk/6)%4]:0,fw=rw.width/4,fh=rw.height/4,hh=32,ww=fw*hh/fh,bob=rzMoving?0:(Math.floor(now/(dlg||shopOpen?400:700))%2)/3;
       ctx.imageSmoothingEnabled=false;ctx.drawImage(rw,col*fw,row*fh,fw,fh,Math.round((x-ww/2)*3)/3,y-hh+1+bob,ww,hh);return;}
     const flashing=performance.now()<rzFlashUntil,ws=SPR.rzel_walk;
     if(ws&&r.mode!='counter'&&!flashing&&r.dir!='down'){const row={left:0,right:1,up:2}[r.dir]||0,col=rzMoving?[1,2,3,2][Math.floor(rzWalk/5)%4]:0,fw=ws.width/4,fh=72,hh=RZ_DRAW_H,ww=fw*hh/fh,bob=rzMoving?0:Math.floor(now/700)%2/3;
@@ -668,7 +675,7 @@ function drawRzel(objs,now){const r=rzS(),x=Math.round(r.x),y=Math.round(r.y);
     if(r.mode=='counter'||(!rzMoving&&r.dir=='down'))k='shopkeeper_'+Math.floor(now/(dlg||shopOpen?260:480))%2;
     else k='rzel_'+r.dir+'_'+(rzMoving?[1,0,2,0][Math.floor(rzWalk/5)%4]:0);
     {const sp=SPR[k];drawS(k,x-Math.floor((sp?sp.width:RW)/2),y-(sp?sp.height:RH)+2);}}});
-  if(r.mode!='counter')objs.push({y:12*TS+13,d:()=>drawS('sign_out',40*TS-2,12*TS-6)});}
+  if(!rzAtCounter())objs.push({y:COUNTER_Y*TS+13,d:()=>drawS('sign_out',40*TS-2,COUNTER_Y*TS-6)});}
 function wrapText(t,maxW){ctx.font='bold 13px monospace';const out=[];let line='';for(const w of t.split(' ')){const tr=line?line+' '+w:w;if(ctx.measureText(tr).width>maxW&&line){out.push(line);line=w;}else line=tr;}if(line)out.push(line);return out;}
 function drawHeart(x,y,on){const M=['.##.##.','#######','#######','.#####.','..###..','...#...'];M.forEach((r,j)=>{for(let i=0;i<7;i++)if(r[i]=='#'){ctx.fillStyle=on?'#e8344a':'#b99a78';ctx.fillRect(x+i*2,y+j*2,2,2);}});if(on){ctx.fillStyle='#ffc0c8';ctx.fillRect(x+2,y+2,2,2);}}
 function drawVN(rightX,footY,maxH,leftX){const im=SPR.rzel_front;if(!im)return;const k=Math.max(1,Math.floor(maxH/im.height)),w=im.width*k,h=im.height*k;if(leftX!=null)rightX=leftX+w;
@@ -682,7 +689,7 @@ function drawDialogue(){if(!dlg)return;const w=Math.min(560,cssW-16),lines=wrapT
   dlg.rects=[];const n=dlg.choices.length,gap=6,bw=Math.min(150,(w-24-gap*(n-1))/n),bx0=x+w-12-(bw*n+gap*(n-1)),by=y+h-38;
   dlg.choices.forEach((c,i)=>{const bx=bx0+i*(bw+gap);dlg.rects.push([bx,by,bw,28]);ctx.fillStyle='#2b1a0e';ctx.fillRect(bx,by,bw,28);
     ctx.fillStyle=i==dlg.sel?'#d8443a':'#8a5530';ctx.fillRect(bx+2,by+2,bw-4,24);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(bx+2,by+2,bw-4,2);
-    txt(c[0],bx+bw/2,by+19,{s:bw<110?11:13,c:'#fff3d6',a:'center'});});}
+    let fs=bw<110?11:13;ctx.font='bold '+fs+'px monospace';while(fs>8&&ctx.measureText(c[0]).width>bw-8){fs--;ctx.font='bold '+fs+'px monospace';}txt(c[0],bx+bw/2,by+19,{s:fs,c:'#fff3d6',a:'center'});});}
 // Rzel sprite (24x36): V-taper bodybuilder, left half bare skin, right half cyber-armor
 const RW=24,RH=40,RC={S:['#6e3a1c','#a35d2c','#cd8a4f','#f2b77f'],A:['#1b1e25','#323843','#4f5765','#8d97a8'],H:['#7d838e','#b3b9c3','#dde1e7','#ffffff'],
   O:'#24140c',V:'#20242c',RE:'#ff3b3b',CR:'#3fc8a6',CRD:'#23876f',T:'#3ad6c6',PU:'#c46bff',GO:'#f2c53d',GOD:'#a87a18'};
@@ -752,9 +759,530 @@ function makeRzel(){const out=RC.O,sh=(P,R)=>[(x,y,c)=>P(x,y+4,c),(x,y,w,h,c)=>R
     mk('rzel_right_'+f,(P,R)=>rzSide(P,R,{leg:f}),'side');mk('rzel_left_'+f,(P,R)=>rzSide(P,R,{leg:f}),'side',0,true);}
   spr('sign_out',20,14,(P,R)=>{R(0,0,20,11,'#8c5a36');R(1,1,18,9,'#efe0c0');R(3,3,14,1,'#b5452f');R(3,5,10,1,'#6b3a1a');R(3,7,12,1,'#6b3a1a');R(9,11,2,3,'#5a331a');},'#3b2414');}
 
+// Villager chibi sheets (same layout as the farmer: rows down/up/left/right x idle,stepA,pass,stepB, 48x72)
+ASSETS.mabel_sheet = 'data:image/png;base64,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';
+ASSETS.pip_sheet = 'data:image/png;base64,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';
+// =====================================================================
+// ================= v0.0.0.22: TOWN LIFE MODULE =======================
+// Seasons, lighting, indoor weather, shop room, NPC schedules, bubbles,
+// relationships + heart events + dating/marriage, scripted "AI" dialogue,
+// social panel, tabbed dev menu. Functions declared here override older
+// versions of the same name above (top-level function declarations: last wins).
+// =====================================================================
+// ---------- Optional LLM hook (not required) ----------
+// To plug in a real model later, either set AI.endpoint to an OpenAI-compatible chat endpoint,
+// or define window.MEADOW_AI = async (req) => 'reply text'. req = {npc, topic, persona, memory, context, fallback}.
+// The scripted line is shown immediately; an AI reply (if any) replaces it when it arrives.
+const AI={endpoint:'',model:'',headers:{},timeoutMs:6000};
+function aiEnabled(){return typeof window.MEADOW_AI=='function'||!!AI.endpoint;}
+async function aiReply(req){
+  if(typeof window.MEADOW_AI=='function')return await window.MEADOW_AI(req);
+  if(!AI.endpoint)return null;
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),AI.timeoutMs);
+  try{const r=await fetch(AI.endpoint,{method:'POST',signal:ctl.signal,headers:Object.assign({'Content-Type':'application/json'},AI.headers),
+      body:JSON.stringify({model:AI.model,messages:[{role:'system',content:req.persona},{role:'user',content:JSON.stringify({topic:req.topic,context:req.context,memory:req.memory})}]})});
+    const d=await r.json();return (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||d.reply||null;}
+  finally{clearTimeout(tm);}}
+const PERSONA={rzel:"You are Rzel, the masked, muscular, half-cyber-armored shopkeeper of Meadowbrook Acres. Charming, confident, playful, flirty but wholesome and never sexual. Short replies (1-2 sentences). Loves chocolate.",
+  mabel:"You are Mabel, a warm, gently teasing grandmother who gardens and bakes in Meadowbrook. 1-2 sentences.",
+  pip:"You are Pip, an excitable 10-year-old who loves fishing and secret clubs. 1-2 sentences."};
+function aiSay(id,topic,fallback){if(!dlg)return;dlg.text=fallback;if(!aiEnabled())return;const myDlg=dlg;dlg.text=fallback+' ...';
+  aiReply({npc:id,topic,persona:PERSONA[id],memory:relOf(id).mem||{},context:dayCtx(),fallback})
+    .then(t=>{if(dlg===myDlg)dlg.text=t?String(t).slice(0,260):fallback;}).catch(()=>{if(dlg===myDlg)dlg.text=fallback;});}
+
+// ---------- Seasons ----------
+const SEASONS=['spring','summer','fall','winter'];let SEAS='spring';
+function season(){return (G&&G.seasonSet)||SEASONS[Math.floor((((G?G.day:1)-1)/28))%4];}
+function dayOfSeason(){return ((G.day-1)%28)+1;}
+function isHalloween(){return (season()=='fall'&&dayOfSeason()==27)||G.hwDay==G.day;}
+function cap1(s){return s[0].toUpperCase()+s.slice(1);}
+function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0;const l=(mx+mn)/2;
+  if(mx!=mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);h=mx==r?(g-b)/d+(g<b?6:0):mx==g?(b-r)/d+2:(r-g)/d+4;h*=60;}return [h,s,l];}
+function hsl2rgb(h,s,l){h=((h%360)+360)%360/360;if(s==0)return [l*255,l*255,l*255];const q=l<0.5?l*(1+s):l+s-l*s,p=2*l-q;
+  const f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<1/2?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};return [f(h+1/3)*255,f(h)*255,f(h-1/3)*255];}
+function makeSeasonal(){for(const k of Object.keys(SPR)){if(k.includes('@'))continue;const cat=/^(grass_|edge_)/.test(k)?'g':/^pine/.test(k)?'p':/^(tree_|bush_)/.test(k)?'t':null;if(!cat)continue;
+  const src=SPR[k];for(const se of ['summer','fall','winter']){const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const x=c.getContext('2d');x.drawImage(src,0,0);
+    const im=x.getImageData(0,0,c.width,c.height),d=im.data;
+    for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;let [h,s,l]=rgb2hsl(d[i],d[i+1],d[i+2]);if(!(h>=55&&h<=175&&s>0.12))continue;
+      if(se=='summer'){h-=7;s=Math.min(1,s*1.2);l*=0.96;}
+      else if(se=='fall'){if(cat=='g'){h=42+(h-60)*0.12;s*=0.8;}else if(cat=='t'){h=14+(h-60)*0.3;s=Math.min(1,s*1.15);}else{s*=0.8;h-=8;}}
+      else{if(cat=='g'){h=205;s*=0.18;l=0.78+l*0.2;}else if(cat=='t'){h=30;s*=0.2;l=l*0.55+0.25;}else{s*=0.55;l=l*0.85+0.08;}}
+      const [r,g,b]=hsl2rgb(h,s,Math.min(1,l));d[i]=r;d[i+1]=g;d[i+2]=b;}
+    x.putImageData(im,0,0);SPR[k+'@'+se]=c;}}}
+function drawS(k,x,y){const s=(SEAS!='spring'&&SPR[k+'@'+SEAS])||SPR[k];if(s)ctx.drawImage(s,Math.round(x),Math.round(y));}
+
+// ---------- Shop room + cottages ----------
+const SHOP={x:34,y:6,w:14,h:10},COUNTER_Y=9,RZ_SPOT=[40,8];
+function buildShop(){rect(SHOP.x,SHOP.y,SHOP.w,SHOP.h,3,4);map[14][40]=9;
+  for(let x=35;x<=46;x++)map[COUNTER_Y][x]=6; map[COUNTER_Y][46]=18;           // counter (gate on the right)
+  for(const x of [35,36,37,38,42,43,44,45,46])map[7][x]=13;                    // wall shelves behind counter
+  map[10][35]=16;map[10][46]=16;map[11][35]=13;map[12][35]=13;map[11][46]=13;map[12][46]=13; // plants + side shelves
+  map[13][35]=14;map[13][46]=14;map[14][35]=14;map[14][46]=14;map[11][37]=17;map[11][43]=17;  // crates + display tables
+  for(let y=11;y<=13;y++)for(let x=39;x<=41;x++)map[y][x]=15;                  // rug
+  // Rzel's cottage (south of the pond) and Mabel & Pip's cottage (east of the shop)
+  rect(36,35,6,5,3,4);map[38][38]=9;map[39][38]=1;for(let x=32;x<=38;x++)map[40][x]=1;map[36][37]=19;map[36][38]=19;map[36][40]=14;
+  rect(50,9,6,5,3,4);map[12][52]=9;for(let y=13;y<=15;y++)map[y][52]=1;map[10][51]=19;map[10][52]=19;map[10][54]=19;map[10][53]=16;}
+BUILDINGS.push({id:'rzhome',x:36,y:35,w:6,h:5,roof:['#3a2f4e','#51436d','#6a5a8c','#8a7aae'],wall:['#4c4f5a','#676b78','#868a98'],alpha:1},
+               {id:'mabel', x:50,y:9, w:6,h:5,roof:['#5a3a52','#7a4e6e','#9a6a8c','#c08cb0'],wall:['#7a6a4c','#9a8a62','#b8a87c'],alpha:1});
+for(const t of [13,14,16,17,18,19])SOLID.add(t);
+function makeDecor(){const O='#2b1a0e';
+  spr('shelf',16,16,(P,R)=>{R(0,0,16,16,'#6b4128');R(1,1,14,14,'#4a2c18');R(1,5,14,2,'#a8723e');R(1,11,14,2,'#a8723e');
+    const c=['#e05a6a','#f2d23a','#5aae55','#6a8ad8','#e8a040','#c070d0'];for(let i=0;i<4;i++){R(2+i*3,2,2,3,c[i%6]);R(2+i*3,8,2,3,c[(i+2)%6]);}P(3,2,'#fff8');P(9,8,'#fff8');});
+  spr('crate',16,16,(P,R)=>{R(1,2,14,13,'#a8723e');R(1,2,14,1,'#d6a26a');R(1,8,14,1,'#7c4a28');R(1,14,14,1,'#5a331a');R(2,3,1,11,'#7c4a28');R(13,3,1,11,'#7c4a28');for(let i=0;i<10;i++)P(3+i,3+i*1.1,'#8c5a36');},O);
+  spr('plant',16,16,(P,R)=>{R(4,10,8,5,'#b5452f');R(4,10,8,1,'#d8664a');R(5,14,6,1,'#7a2c1c');blob(P,[[8,6,4],[5,7,3],[11,7,3]],['#2f6b2c','#4a9a3c','#7cc35a'],()=>0.5);},O);
+  spr('table',16,16,(P,R)=>{R(0,4,16,8,'#8c5a36');R(0,4,16,1,'#c48e58');R(1,12,2,4,'#5a331a');R(13,12,2,4,'#5a331a');R(2,2,4,3,'#e05a6a');R(7,1,3,4,'#f2d23a');R(11,2,3,3,'#5aae55');P(3,2,'#fff8');},O);
+  spr('rug',16,16,(P,R)=>{R(0,0,16,16,'#a8433a');for(let y=0;y<16;y+=4)for(let x=(y/4%2)*2;x<16;x+=4)R(x,y+1,2,2,'#d8a05a');});
+  spr('gate',16,16,(P,R)=>{R(0,0,16,16,'#c48e58');R(0,3,16,13,'#6b3f22');R(0,3,16,3,'#a87448');R(7,6,2,10,'#3b2414');});
+  spr('lamp',8,26,(P,R)=>{R(3,8,2,17,'#3b3b44');R(2,24,4,2,'#2a2a30');R(1,2,6,6,'#2a2a30');R(2,3,4,4,'#ffe7a0');R(0,1,8,1,'#2a2a30');R(3,0,2,1,'#2a2a30');},null);
+  spr('pumpkin',12,10,(P,R)=>{blob(P,[[6,6,4],[3,6,3],[9,6,3]],['#b85a10','#e07a1a','#f8a040'],()=>0.5);R(5,0,2,3,'#4a7a2c');},O);
+  spr('jack',12,10,(P,R)=>{blob(P,[[6,6,4],[3,6,3],[9,6,3]],['#b85a10','#e07a1a','#f8a040'],()=>0.5);R(5,0,2,3,'#4a7a2c');R(3,4,2,2,'#3a1a00');R(7,4,2,2,'#3a1a00');R(3,7,6,1,'#3a1a00');P(4,6,'#3a1a00');P(7,6,'#3a1a00');},O);
+  spr('jack_lit',12,10,(P,R)=>{blob(P,[[6,6,4],[3,6,3],[9,6,3]],['#b85a10','#e07a1a','#f8a040'],()=>0.5);R(5,0,2,3,'#4a7a2c');R(3,4,2,2,'#fff07a');R(7,4,2,2,'#fff07a');R(3,7,6,1,'#ffd040');P(4,6,'#ffd040');P(7,6,'#ffd040');},O);
+  spr('witchhat',14,10,(P,R)=>{R(0,8,14,2,'#2a1a3a');R(3,5,8,3,'#3a2450');R(5,2,5,3,'#3a2450');R(7,0,3,2,'#3a2450');R(3,7,8,1,'#e07a1a');},O);
+  spr('wx_snow',12,12,(P,R)=>{R(5,0,2,12,'#e8f4ff');R(0,5,12,2,'#e8f4ff');for(let i=0;i<12;i++){P(i,i,'#bcd8f0');P(11-i,i,'#bcd8f0');}},'#4a6a8a');}
+
+// ---------- Indoor detection ----------
+let INB=null,lastINB=null;
+function bldInside(x,y){return BUILDINGS.find(b=>x>b.x*TS&&x<(b.x+b.w)*TS&&y>b.y*TS&&y<(b.y+b.h-1)*TS+4)||null;}
+
+// ---------- NPCs & daily schedules ----------
+const SPOTS={counter:[40,8],shopFloor:[38,13],shopFloor2:[42,13],rzHome:[39,37],porch:[18,17],fhHome:[18,12],fhBed:[17,13],
+  plaza:[37,18],plaza2:[42,18],pondN:[45,24],pondS:[45,33],garden:[54,15],mHome:[53,11],pHome:[51,11]};
+const NPCDEF={
+  rzel:{name:'Rzel',h:32},
+  mabel:{name:'Mabel',h:23,sheet:'mabel_sheet'},
+  pip:{name:'Pip',h:19,sheet:'pip_sheet'}};
+// [start minute, spot, activity]  activity: stand | wander | work | sleep | fish | candy
+function schedule(id){const wet=G.weather=='rain'||G.weather=='chocolate'||G.weather=='snow',hw=isHalloween(),R=relOf('rzel');
+  if(id=='rzel'){
+    if(R.married)return [[0,'fhBed','sleep'],[360,'fhHome','stand'],[500,'counter','work'],[1020,hw?'plaza':'porch',hw?'candy':'wander'],[1200,'fhHome','stand'],[1320,'fhBed','sleep']];
+    if(hw)return [[0,'rzHome','sleep'],[360,'rzHome','stand'],[480,'counter','work'],[1020,'plaza','candy'],[1320,'rzHome','sleep']];
+    if(wet)return [[0,'rzHome','sleep'],[360,'rzHome','stand'],[480,'counter','work'],[1020,'shopFloor','wander'],[1260,'rzHome','sleep']];
+    return [[0,'rzHome','sleep'],[360,'rzHome','stand'],[480,'counter','work'],[1020,'pondN','wander'],[1200,'plaza','wander'],[1320,'rzHome','sleep']];}
+  if(id=='mabel')return [[0,'mHome','sleep'],[420,'mHome','stand'],[480,wet?'mHome':'garden','wander'],[720,wet?'shopFloor':'plaza','wander'],[960,wet?'shopFloor':'pondN','wander'],[1140,'mHome','stand'],[1260,'mHome','sleep']];
+  return [[0,'pHome','sleep'],[450,'pHome','stand'],[540,wet?'shopFloor2':'pondS',wet?'wander':'fish'],[930,hw?'plaza':'plaza2','wander'],[1110,'pHome','stand'],[1200,'pHome','sleep']];}
+function schedNow(id){const s=schedule(id);let cur=s[0];for(const e of s)if(G.time>=e[0])cur=e;return cur;}
+const RT={rzel:{},mabel:{},pip:{}};   // runtime-only state (paths, timers); not saved
+function npcObj(id){if(id=='rzel')return rzS();if(!G.vill)G.vill={};if(!G.vill[id]||!isFinite(G.vill[id].x)){const s=SPOTS[schedNow(id)[1]];G.vill[id]={x:s[0]*TS+8,y:s[1]*TS+12,dir:'down'};}return G.vill[id];}
+function npcScheduled(id){return id!='rzel'||rzS().mode=='counter';}
+function walkable(t){return !SOLID.has(t)||t==18||t==9;}
+function bfs(sx,sy,tx,ty){if(sx==tx&&sy==ty)return [];const key=(x,y)=>y*W+x,prev=new Int32Array(W*H).fill(-1),q=[key(sx,sy)];prev[key(sx,sy)]=key(sx,sy);
+  for(let i=0;i<q.length;i++){const k=q[i],x=k%W,y=(k/W)|0;if(x==tx&&y==ty){const p=[];let c=k;while(c!=key(sx,sy)){p.push([c%W,(c/W)|0]);c=prev[c];}return p.reverse();}
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const nk=key(nx,ny);if(prev[nk]>=0||!walkable(map[ny][nx]))continue;prev[nk]=k;q.push(nk);}}
+  return null;}
+function npcTile(o){return [Math.floor(o.x/TS),Math.floor((o.y-2)/TS)];}
+function npcSnap(id){if(!npcScheduled(id))return;const o=npcObj(id),e=schedNow(id),s=SPOTS[e[1]];o.x=s[0]*TS+8;o.y=s[1]*TS+12;o.dir='down';
+  const rt=RT[id];rt.lock=null;rt.path=[];rt.spot=e[1]+e[0];rt.hidden=e[2]=='sleep';rt.wT=2+Math.random()*3;if(id=='rzel'&&e[2]=='work'){o.x=HOME_X;o.y=HOME_Y;}}
+function npcSnapAll(){for(const id in NPCDEF)npcSnap(id);}
+let npcLastT=null,npcLastDay=null;
+function updateNPCs(dt){
+  if(npcLastT===null||Math.abs(G.time-npcLastT)>25||npcLastDay!==G.day){npcSnapAll();}npcLastT=G.time;npcLastDay=G.day;
+  const r=rzS();if((r.mode=='follow'||r.mode=='stay')&&G.time>=1380&&!relOf('rzel').married){r.mode='counter';RT.rzel.spot=null;say('rzel',"It's getting late, farmer. I'm heading home - sweet dreams!",4);}
+  if((r.mode=='follow'||r.mode=='stay')&&relOf('rzel').married&&G.time>=1380){r.mode='counter';RT.rzel.spot=null;say('rzel',"Let's head home together, love.",4);}
+  for(const id in NPCDEF){const rt=RT[id];if(!npcScheduled(id)){rt.hidden=false;continue;}const o=npcObj(id),e=schedNow(id),key=e[1]+e[0];
+    if(rt.lock!=null){if(Math.abs(G.time-rt.lock)<90){rt.moving=false;continue;}rt.lock=null;}
+    if(rt.spot!==key){rt.spot=key;const s=SPOTS[e[1]],[tx,ty]=npcTile(o);rt.path=bfs(tx,ty,s[0],s[1])||[];if(!rt.path.length&&(tx!=s[0]||ty!=s[1])){o.x=s[0]*TS+8;o.y=s[1]*TS+12;}rt.hidden=false;rt.wT=1+Math.random()*3;}
+    let moved=0;
+    if(rt.path&&rt.path.length){const [nx,ny]=rt.path[0],gx=nx*TS+8,gy=ny*TS+12,dx=gx-o.x,dy=gy-o.y,l=Math.hypot(dx,dy),sp=46*dt*(CHEAT.speed?2:1);
+      if(l<=sp){o.x=gx;o.y=gy;rt.path.shift();}else{o.x+=dx/l*sp;o.y+=dy/l*sp;}moved=Math.min(l,sp);
+      if(Math.abs(dx)>Math.abs(dy)*1.2)o.dir=dx<0?'left':'right';else if(l>0.1)o.dir=dy<0?'up':'down';}
+    else{ // arrived
+      if(e[2]=='sleep')rt.hidden=true;
+      else if(e[2]=='work'){if(id=='rzel'){o.x+=(HOME_X-o.x)*Math.min(1,dt*6);o.y+=(HOME_Y-o.y)*Math.min(1,dt*6);}o.dir='down';}
+      else if(e[2]=='wander'||e[2]=='candy'){rt.wT-=dt;if(rt.wT<=0){rt.wT=3+Math.random()*5;const s=SPOTS[e[1]],[tx,ty]=npcTile(o);
+        for(let k=0;k<8;k++){const ax=s[0]+Math.round((Math.random()-.5)*6),ay=s[1]+Math.round((Math.random()-.5)*4);if(ax<0||ay<0||ax>=W||ay>=H||!walkable(map[ay][ax]))continue;
+          if(bldAt(ax,ay)!==bldAt(s[0],s[1]))continue;const p=bfs(tx,ty,ax,ay);if(p&&p.length<=10){rt.path=p;break;}}}
+        else if(Math.random()<dt*0.3){const px=G.p.x-o.x,py=G.p.y-o.y;if(Math.hypot(px,py)<60)o.dir=Math.abs(px)>Math.abs(py)?(px<0?'left':'right'):(py<0?'up':'down');}}
+      else if(e[2]=='fish')o.dir='down';
+      else o.dir=o.dir||'down';}
+    rt.moving=moved>0.01;rt.walk=(rt.walk||0)+moved;
+    if(id=='rzel'){rzMoving=rt.moving;if(rt.moving)rzWalk+=moved;}}
+  // idle chatter
+  for(const id in NPCDEF){const rt=RT[id];rt.chatT=(rt.chatT===undefined?8+Math.random()*12:rt.chatT)-dt;
+    if(rt.chatT<=0){rt.chatT=18+Math.random()*24;const o=npcObj(id);if(!rt.hidden&&Math.hypot(o.x-G.p.x,o.y-G.p.y)<TS*7&&!bubbles[id])say(id,ambientLine(id),4);}}}
+function rzAtCounter(){const r=rzS();return r.mode=='counter'&&!RT.rzel.hidden&&schedNow('rzel')[2]=='work'&&Math.hypot(r.x-HOME_X,r.y-HOME_Y)<6;}
+function shopIsOpen(){return rzAtCounter()&&G.time>=480&&G.time<1020;}
+function shopClosedMsg(){const h=G.time/60;return h<8?'Shop opens at 8am. (Rzel is still at home.)':h>=17?'Shop closed for the day (8am-5pm).':'Rzel is out. (Sign: "Back soon!")';}
+function npcAt(tx,ty){for(const id in NPCDEF){if(RT[id].hidden)continue;const o=npcObj(id),cx=tx*TS+8,cy=ty*TS+10;if(Math.abs(o.x-cx)<=10&&Math.abs(o.y-2-cy)<=10)return id;}return null;}
+function blocked(x,y){if(G&&G.rz&&G.rz.mode=='stay'&&Math.abs(x-G.rz.x)<9&&Math.abs(y-G.rz.y)<6)return true;if(CHEAT.noclip)return x<4||y<6||x>W*TS-4||y>H*TS-1;for(const [cx,cy] of [[x-5,y-5],[x+5,y-5],[x-5,y+1],[x+5,y+1]]){
+  const tx=Math.floor(cx/TS),ty=Math.floor(cy/TS);if(tx<0||ty<0||tx>=W||ty>=H||SOLID.has(map[ty][tx]))return true;}return false;}
+function rzSet(m){const r=rzS();if(m=='home'){puff(Math.floor(r.x/TS),Math.floor(r.y/TS),'#c9cdd5',10);r.mode='counter';npcSnap('rzel');}
+  else{r.mode=m;if(m=='follow')rzTrail=[];}}
+
+// ---------- Speech bubbles ----------
+const bubbles={};
+function say(id,text,dur){bubbles[id]={text,t:dur||4};}
+function updateBubbles(dt){for(const id in bubbles){bubbles[id].t-=dt;if(bubbles[id].t<=0)delete bubbles[id];}}
+function drawBubbles(){const f=K/DPR;ctx.font='bold 11px monospace';
+  for(const id in bubbles){if(RT[id]&&RT[id].hidden)continue;const b=bubbles[id],o=npcObj(id),hh=NPCDEF[id].h;let sx=(o.x-cam.x)*f,sy=(o.y-hh-4-cam.y)*f;
+    const lines=[];let line='';for(const w of b.text.split(' ')){const tr=line?line+' '+w:w;if(ctx.measureText(tr).width>150&&line){lines.push(line);line=w;}else line=tr;}if(line)lines.push(line);
+    const bw=Math.max(...lines.map(l=>ctx.measureText(l).width))+14,bh=lines.length*13+10;let bx=Math.round(sx-bw/2),by=Math.round(sy-bh-8);
+    bx=Math.max(4,Math.min(cssW-bw-4,bx));by=Math.max(cssW<600?150:4,by);ctx.globalAlpha=Math.min(1,b.t*3);
+    ctx.fillStyle='#2b1a0e';ctx.fillRect(bx-2,by-2,bw+4,bh+4);ctx.fillStyle='#fff8e8';ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle='#2b1a0e';ctx.fillRect(Math.round(sx)-4,by+bh+2,8,2);ctx.fillRect(Math.round(sx)-2,by+bh+4,4,3);ctx.fillStyle='#fff8e8';ctx.fillRect(Math.round(sx)-3,by+bh,6,2);ctx.fillRect(Math.round(sx)-1,by+bh+2,2,2);
+    ctx.fillStyle='#8a2e1e';ctx.textAlign='left';ctx.textBaseline='alphabetic';lines.forEach((l,i)=>{ctx.fillStyle='#3b2414';ctx.fillText(l,bx+7,by+15+i*13);});ctx.globalAlpha=1;}}
+function onEnterBuilding(b){setTimeout(()=>{if(INB===b)onEnterBuilding2(b);},350);}
+function onEnterBuilding2(b){
+  const inB=id=>{if(RT[id].hidden)return false;const o=npcObj(id);return bldInside(o.x,o.y)===b;};
+  if(b.id=='shop'){const m=relOf('rzel').mem;if(m.lastVisit!=G.day){m.visits++;}
+    if(inB('rzel'))say('rzel',greetLine(m.lastVisit!=G.day),5);m.lastVisit=G.day;
+    let d=0;for(const id of ['mabel','pip'])if(inB(id)){setTimeout(()=>say(id,id=='mabel'?pick(['Oh hello, dear!','Shopping too? Rzel saves me the good flour.']):pick(['Hi!! Are you buying candy?','Rzel let me count the seeds!']),3),900+d);d+=900;}}
+  else if(b.id=='mabel'){if(inB('mabel'))say('mabel',pick(['Come in, come in! Mind the cat... I mean, imagine a cat.','Kettle is on, dear.']),4);if(inB('pip'))setTimeout(()=>say('pip',pick(['That is MY bed. Don\'t touch the fish poster.','Shh, Grandma is napping. Kidding!'])),800);}
+  else if(b.id=='rzhome'){if(inB('rzel'))say('rzel',G.time>=1260?"A late visit? Careful, people will talk... I hope they do.":"Welcome to my place! Ignore the dumbbells. Actually, admire them.",4);}
+  else if(b.id=='house'&&relOf('rzel').married&&inB('rzel'))say('rzel',spouseLine(),4);}
+function npcReact(kind){let best=null,bd=TS*6;for(const id in NPCDEF){if(RT[id].hidden)continue;const o=npcObj(id),d=Math.hypot(o.x-G.p.x,o.y-G.p.y);if(d<bd){bd=d;best=id;}}
+  if(!best||Math.random()<0.4)return;
+  const L={harvest:{rzel:['Look at that harvest! Bring it by the shop, I pay in compliments. And gold.','Strong arms, fresh crops. Impressive, farmer.'],mabel:['My, what a lovely crop!'],pip:['WHOA, did you grow that?!']}};
+  say(best,pick(L[kind][best]),3.5);}
+
+// ---------- Relationships ----------
+const RELDEF={rzel:{bday:['fall',13],love:['chocolate'],like:['melon','corn'],neutral:['radish'],hate:[],dateable:true},
+  mabel:{bday:['spring',20],love:['melon'],like:['radish'],neutral:['corn'],hate:['chocolate']},
+  pip:{bday:['summer',8],love:['chocolate'],like:['corn'],neutral:['melon'],hate:['radish']}};
+function relDefaults(){return {pts:0,talkDay:0,giftDay:0,known:{},seen:[],mem:{visits:0,lastVisit:0,chats:0,flirts:0,flirtDay:0,flirtsToday:0,lastGift:null,lastGiftDay:0,passedOut:0,recent:[]}};}
+function fixRel(o){const d=relDefaults();o=Object.assign(d,o||{});o.mem=Object.assign(relDefaults().mem,o.mem||{});if(!Array.isArray(o.seen))o.seen=[];if(!o.known||typeof o.known!='object')o.known={};return o;}
+function relOf(id){if(id=='rzel'){if(!G.rzel||!G.rzel.mem)G.rzel=fixRel(G.rzel);return G.rzel;}if(!G.rel)G.rel={};if(!G.rel[id]||!G.rel[id].mem)G.rel[id]=fixRel(G.rel[id]);return G.rel[id];}
+function heartCap(id){const R=relOf(id);return id=='rzel'?(R.married?14:R.dating?10:8):10;}
+function heartsOf(id){return Math.min(heartCap(id),Math.floor(relOf(id).pts/100));}
+function hearts(){return heartsOf('rzel');}
+function addRel(id,n){const R=relOf(id),h=heartsOf(id);R.pts=Math.max(0,Math.min(heartCap(id)*100,R.pts+n));const h2=heartsOf(id);
+  if(h2>h){if(id=='rzel')rzFlash('blush');game.msg(NPCDEF[id].name+': '+h2+' \u2665');}}
+function addPts(n){addRel('rzel',n);}
+function statusOf(id){const R=relOf(id),h=heartsOf(id);if(id=='rzel'){if(R.married)return 'Married';if(R.engaged)return 'Engaged';if(R.dating)return 'Dating';}
+  return h>=8?'Best friend':h>=5?'Good friend':h>=3?'Friend':h>=1?'Acquaintance':'Stranger';}
+function isBday(id){const b=RELDEF[id].bday;return season()==b[0]&&dayOfSeason()==b[1];}
+function giftKind(id,it){const d=RELDEF[id];return d.love.includes(it)?'love':d.like.includes(it)?'like':d.hate.includes(it)?'hate':'neutral';}
+function itemName(it){return (CROPS[it]||ITEMS[it]||{name:it}).name;}
+function giftable(){return ['radish','corn','melon','chocolate','bouquet','pendant'].filter(k=>G.inv[k]>0);}
+function giveGift(id,it){const R=relOf(id),nm=itemName(it).toLowerCase();rzMood='normal';
+  if(it=='bouquet'){if(id!='rzel'){rzMood='normal';return id=='pip'?"Flowers? Ew! ...Okay they're kinda pretty. Give them to someone special!":"Oh my, dear, these are lovely - but save them for someone special.";}
+    if(R.dating)return "We're already together, silly. Keep the flowers for our table.";
+    if(heartsOf('rzel')<8){rzMood='mad';return "Whoa there... that's a big step. Let's get to know each other a little more first, okay? (Needs 8 hearts.)";}
+    G.inv.bouquet--;R.dating=true;R.giftDay=G.day;addRel('rzel',60);rzMood='blush';rzFlash('blush');
+    setTimeout(()=>startEvent('rzel','rzDate'),50);return "A bouquet... for me? ...Yes. A thousand times yes.";}
+  if(it=='pendant'){if(id!='rzel')return "That's a precious pendant. It's meant for someone you want to spend your life with.";
+    if(R.married)return "You already have my heart, and my last name. Keep it safe.";
+    if(!R.dating||heartsOf('rzel')<10){rzMood='mad';return "That pendant means forever... ask me again when we're dating and closer. (Dating + 10 hearts.)";}
+    G.inv.pendant--;R.engaged=true;R.wedDay=G.day+3;R.giftDay=G.day;rzMood='blush';rzFlash('blush');setTimeout(()=>startEvent('rzel','rzPropose'),50);return "Is that... a Moonstone Pendant? Farmer, are you asking what I think you're asking?";}
+  if(R.giftDay==G.day){rzMood='mad';if(id=='rzel')rzFlash('mad');return id=='rzel'?"You already spoiled me today. Come back tomorrow, superstar.":id=='pip'?"One gift a day! That's the rule. I made the rule.":"You're too generous, dear. One a day is plenty.";}
+  const k=giftKind(id,it),bd=isBday(id),pts={love:80,like:45,neutral:20,hate:-40}[k]*(bd?3:1);G.inv[it]--;R.giftDay=G.day;R.known[it]=k;R.mem.lastGift=it;R.mem.lastGiftDay=G.day;
+  const h0=heartsOf(id);addRel(id,pts);
+  if(id=='rzel'){rzMood=k=='hate'?'mad':(k=='love'||heartsOf(id)>h0)?'blush':'smile';rzFlash(rzMood);}
+  const L={rzel:{love:["CHOCOLATE? For me? You absolutely know the way to my heart.","Chocolate! Okay, you officially have my full attention. Forever."],like:["A {x}! Grown by your hands? I'll treasure it.","Fresh {x}. Thoughtful AND good at farming? Unfair."],neutral:["A {x}. Simple, honest... kind of like you. Thanks, farmer.","A {x}? Hey, it's the thought that counts. And I'm thinking about you."],hate:["Hm. Not my thing... but you thought of me. That counts."]},
+    mabel:{love:["A {x}! My favorite! Oh, I'll bake you something wonderful.","Sweet as a summer {x}. Thank you, dear!"],like:["A {x}! How thoughtful.","Fresh {x}, lovely. Your grandmother would be proud."],neutral:["A {x}. Thank you, dear."],hate:["Chocolate... my doctor says no. But the thought is sweet."]},
+    pip:{love:["CHOCOLATE!!! You're the BEST! Don't tell Grandma.","Is this... for ME? Best day EVER!"],like:["A {x}! I'm gonna use it as fish bait. Kidding! ...Maybe."],neutral:["Uh, thanks! A {x}."],hate:["Radish?! Bleh! Grandma makes me eat these!"]}};
+  let t=pick(L[id][k]).replace('{x}',nm);if(bd)t=(id=='rzel'?"You remembered my birthday?! ":id=='pip'?"IT'S MY BIRTHDAY! ":"For my birthday? ")+t;return t;}
+function giftRzel(){const it=giftable()[0];if(!it){rzMood='mad';rzFlash('mad');return "Empty-handed? That's okay - your company is the best gift. (Bring a crop or chocolate!)";}return giveGift('rzel',it);}
+
+// ---------- Context + scripted dialogue ("AI" without an API) ----------
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function tod(){const h=G.time/60;return h<11?'morning':h<17?'afternoon':h<21?'evening':'night';}
+function dayCtx(){return {time:tod(),hour:Math.floor(G.time/60)%24,weather:G.weather,season:season(),day:dayOfSeason(),halloween:isHalloween(),hearts:heartsOf('rzel'),status:statusOf('rzel'),
+  cropsReady:Object.values(G.soil).filter(s=>s.crop&&s.growth>=CROPS[s.crop].days).length,tilled:Object.keys(G.soil).length};}
+// pick a line not said recently; pools are arrays of strings or [condFn, string]
+function chooseLine(id,pool){const R=relOf(id),ok=pool.filter(l=>typeof l=='string'||l[0]()).map(l=>typeof l=='string'?l:l[1]);
+  const fresh=ok.filter(l=>!R.mem.recent.includes(l));const t=pick(fresh.length?fresh:ok);R.mem.recent.push(t);if(R.mem.recent.length>14)R.mem.recent.shift();return t;}
+function greetLine(firstToday){const R=relOf('rzel'),m=R.mem,h=heartsOf('rzel'),c=dayCtx();
+  if(m.visits<=1&&R.pts<20)return "Welcome in! Name's Rzel - seeds, tools, and charm, all under one roof.";
+  const P=[
+    [()=>R.married,"Hey, love! Came to visit me at work? Best part of my shift."],
+    [()=>R.dating&&!R.married,"There's my favorite person. The shop just got brighter."],
+    [()=>m.passedOut==G.day,"Heard you passed out in the field last night! Promise me you'll sleep in a bed tonight."],
+    [()=>c.halloween,"Happy Pumpkin Night! Like the hat? Spooky AND handsome."],
+    [()=>G.weather=='rain',"You're soaked! Come in, dry off. I'll pretend I'm not staring at your rain-hair."],
+    [()=>G.weather=='chocolate',"Chocolate rain! Did you bring me some? ...Did you?"],
+    [()=>G.weather=='snow',"Brr! Shake off that snow. I'd offer a hug for warmth, purely practical reasons."],
+    [()=>c.season=='summer'&&c.time=='afternoon',"Hot one out there! Good thing my shop has shade and a gorgeous shopkeeper."],
+    [()=>c.time=='morning'&&firstToday,"Morning, sunshine! First customer of the day, and the cutest."],
+    [()=>c.time=='evening',"Evening! Almost closing - stay a bit, I'll make it worth your while with discounts. Kidding. Mostly."],
+    [()=>m.lastGiftDay==G.day-1&&m.lastGift,"Still thinking about that "+(m.lastGift?itemName(m.lastGift).toLowerCase():'gift')+" you gave me yesterday."],
+    [()=>!firstToday,"Back again? You must really like it here. Or someone here."],
+    [()=>h>=6,"Hey you. I saved you a smile. It's this one."],
+    [()=>h>=3,"Look who's here! I was just thinking about you. Coincidence? Absolutely not."],
+    "Hey there, farmer! Need seeds, or did you just miss my face? Well, my mask.",
+    "Welcome back! The radish seeds missed you. So did I."];
+  return chooseLine('rzel',P);}
+function spouseLine(){return pick(["Morning, love. I made coffee - well, I made it brown.","Did you sleep well? You were smiling in your sleep. I checked.","Our farm looks amazing today. So do you.","Don't work too hard out there. Come home for lunch, okay?","Hey, partner. Best part of my day? Waking up next to the best farmer in the valley."]);}
+function chatLine(id){const R=relOf(id),h=heartsOf(id),c=dayCtx();
+  if(id=='rzel'){if(R.married)return chooseLine(id,[spouseLine(),"Every morning I wake up and think: I married the hardest working farmer alive. Lucky me.","When you're out in the fields I catch myself looking out the window. Every. Time.","We should take a walk by the pond tonight. Just us and the frogs."]);
+    const P=[[()=>h<=2,"Name's Rzel. Best seeds in the valley. Best smile too, but you didn't hear it from me."],[()=>h<=2,"Is that dirt on your face, or are you just naturally down-to-earth?"],
+      [()=>h<=2,"I lift crates in the morning, sell seeds all day, and look good doing both."],[()=>h>=2,"You've been tending crops all day, but you've been growing on me."],
+      [()=>h>=3,"Are you a radish? Because you've got me turning a little red under this mask."],[()=>h>=3,"I'd say you're the cream of the crop, but that sounds too corny. ...Corn-y. Get it?"],
+      [()=>h>=5,"You know what my favorite season is? Whichever one you're in."],[()=>h>=5,"I counted my seed stock this morning. Lost track halfway, thinking about you."],
+      [()=>h>=7,"If love were a crop, I'd have a whole field of it with your name on the sign."],[()=>R.dating,"Dinner at the pond later? I'll bring the chocolate. You bring you."],
+      [()=>c.cropsReady>0,"I hear you've got "+c.cropsReady+" crop"+(c.cropsReady>1?'s':'')+" ready to harvest. Go get 'em, then come brag to me."],
+      [()=>c.season=='winter',"Winter's slow for farming. Good thing I'm a great distraction."],[()=>c.season=='fall',"Fall colors, cozy sweaters, pumpkin night coming... my favorite season. Until you prove me wrong."],
+      [()=>R.mem.chats>5,"We talk every day now. I kind of look forward to it. Don't tell anyone."],"The mask? Keeps my face safe from how pretty this valley is.","Pip asked me to arm-wrestle again. I let him win. Don't tell him."];
+    return chooseLine(id,P);}
+  if(id=='mabel')return chooseLine(id,[[()=>h<2,"I'm Mabel. I've lived here sixty years and I still find new flowers every spring."],"Rzel helps me carry my flour. Such a gentleman under all that metal.",[()=>c.season=='summer',"Summer tomatoes! Well, I wish we had tomatoes. Melons will do."],"Pip thinks I don't know about his secret club. I know everything, dear.",[()=>h>=3,"You remind me of my late husband. Stubborn, sweet, always muddy."],[()=>G.weather=='rain',"Rain is the garden's lullaby."]]);
+  return chooseLine(id,[[()=>h<2,"I'm Pip! I'm gonna catch the biggest fish in the whole pond!"],"Rzel can lift TWO crates. With ONE arm!","Grandma says I have to be in bed by seven. I'm SO grown up though.",[()=>h>=3,"You can be in my secret club. The password is 'chocolate'. Don't tell."],[()=>G.weather=='rain',"Fish bite more in the rain! Probably! I made that up."],[()=>c.halloween,"I'm a ghost! Boo! ...Did I scare you?"]]);}
+function dayLine(id){const c=dayCtx(),R=relOf(id);const hr=c.hour;
+  if(id=='rzel'){const ws={sunny:'Sunny days mean busy days.',rain:'Rain means farmers stay home... except the brave ones. Like you.',chocolate:'Chocolate from the sky! Best. Weather. Ever.',snow:'Snow days are slow. Perfect for hot cocoa.'}[G.weather]||'';
+    const plan=hr<8?"I'm just getting ready - shop opens at eight.":hr<17?"I'm on shift until five, then I hit the pond for my evening workout.":hr<21?"Shop's closed. I'm just unwinding, enjoying the view. The view is you, by the way.":"It's late! I should be in bed... but here I am, talking to you. Worth it.";
+    return ws+' '+plan+(c.cropsReady?' And you have '+c.cropsReady+' crops waiting!':c.tilled?" Your fields are looking good.":" Haven't seen you farming much yet. Grab some seeds!");}
+  if(id=='mabel')return hr<12?"I'm weeding the garden this morning. Weeds are like gossip - pull them early!":hr<16?"I like to sit in the square around lunchtime and watch everyone go by.":"I'll walk by the pond, then home for tea and bed. Early to bed, dear!";
+  return hr<9?"Fishing time soon! The fish wake up at nine. I asked them.":hr<15?"I'm FISHING. Shh, you'll scare them.":"After fishing I play near the shop. Rzel gives me candy sometimes. SOMETIMES.";}
+function flirtLine(){const R=relOf('rzel'),h=heartsOf('rzel'),m=R.mem;if(m.flirtDay!=G.day){m.flirtDay=G.day;m.flirtsToday=0;}m.flirtsToday++;m.flirts++;
+  if(m.flirtsToday>3){rzMood='mad';return "Easy, tiger. Save some charm for tomorrow - you'll wear out my heart.";}
+  if(m.flirtsToday==1)addRel('rzel',h>=2?10:4);
+  if(h<2){rzMood='smile';return chooseLine('rzel',["Ha! Bold. I like bold. Buy some seeds and we'll talk.","Flirting with the shopkeeper? Smooth. Let's see if you keep coming back.","Careful, farmer - I flirt back, and I'm really good at it."]);}
+  rzMood=h>=5?'blush':'smile';
+  return chooseLine('rzel',[[()=>h<5,"You must be fertilizer, because everything grows better when you're around."],[()=>h<5,"If you were a seed, I'd water you every single day. Rain or shine."],
+    [()=>h>=4,"Every time that door swings open, I hope it's you. Today it is. Lucky me."],[()=>h>=5,"You're making me blush. Good thing I wear a mask."],
+    [()=>h>=6,"Stay a while? The shop can wait. Okay, the shop can't wait. But I wish it could."],[()=>R.dating,"Have I told you today that you're my favorite person in the valley? Consider it told."],
+    [()=>R.married,"Married to you and still nervous when you flirt. What did you do to me?"],"Are you a scarecrow? Because I can't stop looking at you, and I'm definitely not scared."]);}
+function ambientLine(id){const c=dayCtx();if(id=='rzel'){if(c.halloween&&schedNow('rzel')[2]=='candy')return pick(['Trick or treat? I have candy... and treats... I am the treat.','Happy Pumpkin Night!']);
+    const e=schedNow('rzel')[2];if(e=='work')return pick(['Fresh seeds! Get your fresh seeds!','Radish seeds, corn seeds, melon seeds... and one handsome shopkeeper.','*hums a rock song*','Business is good today.']);
+    if(e=='wander')return pick(['Hup! ...Twenty-nine... thirty...','Nice evening for a workout.','The pond looks nice tonight.']);return pick(['Hey!','Oh, hi!']);}
+  if(id=='mabel')return pick(['Lovely day, isn\'t it?','Hmm, my knees say rain is coming.','Hello, dear!',G.weather=='snow'?'Bundle up, dear!':'These flowers need water.']);
+  return pick(['I almost caught one!!','Hi! Hi! Hi!','Bet I can run faster than you!','Do fish sleep?']);}
+
+// ---------- Heart events (short scripted scenes) ----------
+// step: {s:speaker id|'narr', t:text, m:mood, c:[[label, heartPts, reply], ...]}
+const HEART_EVENTS={
+ rzel:[
+  {id:'rz2',h:2,title:'After Hours',steps:[{s:'narr',t:'You find Rzel stacking seed crates after closing time.'},
+    {s:'rzel',t:"Oh! Didn't hear you come in. These crates don't lift themselves... well, they do when I lift them.",c:[['Help him stack',25,"Look at you keeping up with me. Teamwork looks good on us."],['Tease his muscles',15,"Ha! Careful - flattery is my second favorite gift. Chocolate's still first."],['Leave him to it',0,"Fair. Watching me is a workout too, I get it."]]},
+    {s:'rzel',t:"Thanks for stopping by. The shop feels less empty with you in it.",m:'smile'}]},
+  {id:'rz4',h:4,title:'Behind the Mask',steps:[{s:'narr',t:'Rzel taps his helmet thoughtfully.'},
+    {s:'rzel',t:"You ever wonder why I keep the mask on?",c:[['Ask gently',30,"...My dad designed it. When I wear it, I feel brave. Maybe someday I'll show you what's underneath."],['Say it suits him',20,"Suits me, huh? Good. I'd hate to scare off my favorite customer."],['Joke about it',-10,"Heh. Yeah... laugh it up, farmer. (He looks away.)"]]},
+    {s:'rzel',t:"Not many people ask. Thanks for caring.",m:'normal'}]},
+  {id:'rz6',h:6,title:'Stars Over the Pond',steps:[{s:'narr',t:'That evening, Rzel waves you over to the pond. Fireflies drift over the water.'},
+    {s:'rzel',t:"Look up. No city lights out here. Just stars... and you.",m:'blush',c:[['Sit beside him',35,"(He scoots closer.) This is nice. Really nice."],['Name a constellation',25,"'The Big Radish'? ...I love that you made that up."],['Say you are tired',0,"Rest up, then. The stars will wait. So will I."]]},
+    {s:'rzel',t:"I'm glad you moved to Meadowbrook, farmer.",m:'smile'}]},
+  {id:'rz8',h:8,title:'A Song for You',cond:()=>!relOf('rzel').dating,steps:[{s:'narr',t:'Rzel is humming behind the counter. He stops when he sees you - then grins.'},
+    {s:'rzel',t:"I wrote a little song. It's about a farmer who makes a shopkeeper forget his own prices.",m:'blush',c:[['Clap along',30,"An audience of one, and it's the right one."],['Ask for a love song',35,"That WAS the love song. Guess I need to be more obvious."],['Cover your ears',-15,"Ouch. Tough crowd. I'll practice."]]},
+    {s:'rzel',t:"...If you ever wanted to make this official, a bouquet says a lot. Just saying.",m:'blush'}]},
+  {id:'rzDate',h:8,title:'Official',manual:true,steps:[{s:'rzel',t:"So... we're dating now. I've been practicing that sentence in the mirror for weeks.",m:'blush',c:[['Hug him',20,"(Cold armor on one side, warm heart on both.) Best day ever."],['Hold his hand',20,"(He squeezes back.) I'm never letting go. Fair warning."]]}]},
+  {id:'rz10',h:10,title:'Sunset Promise',cond:()=>relOf('rzel').dating&&!relOf('rzel').engaged&&!relOf('rzel').married,steps:[{s:'narr',t:'Rzel closes the shop early and walks with you to the edge of the farm at sunset.'},
+    {s:'rzel',t:"I used to think this town was just a place to sell seeds. Now it's where you are. That makes it home.",m:'blush',c:[['"Home is with you."',40,"(He's quiet for a long moment.) ...Say that again sometime. Every day, maybe."],['Lean on his shoulder',35,"(He wraps the armored arm around you, gently.) Comfortable? Good."]]},
+    {s:'narr',t:'You could ask him to stay forever... with a Moonstone Pendant from the shop.'}]},
+  {id:'rzPropose',h:10,title:'The Pendant',manual:true,steps:[{s:'rzel',t:"A Moonstone Pendant... You want to spend forever with me? YES. Yes! Three days - let's have the wedding in three days!",m:'blush'},{s:'narr',t:'The wedding is in 3 days.'}]},
+  {id:'wedding',h:10,title:'The Wedding',manual:true,steps:[{s:'narr',t:'The whole town gathers by the pond under strings of lanterns. Mabel is crying already. Pip is holding the rings very, very carefully.'},
+    {s:'mabel',t:"Oh, look at you two. I haven't seen a love this sweet since my own wedding day."},
+    {s:'rzel',t:"Farmer... you make every day feel like harvest day. I promise to carry the heavy crates, cheer the bad seasons, and love you through all of them.",m:'blush',c:[['"I do."',50,"(He lifts the mask just enough for a kiss on your forehead.) I do too. Forever."],['"Forever and always."',50,"Forever and always. You're stuck with me now, partner."]]},
+    {s:'pip',t:"EWWW. ...Okay that was actually kinda nice. Is there cake?!"},{s:'narr',t:'Rzel moves into the farmhouse. He still runs the shop, but now he comes home to you.'}]},
+  {id:'rz12',h:12,title:'Breakfast for Two',cond:()=>relOf('rzel').married,steps:[{s:'narr',t:'You wake up to the smell of slightly burnt pancakes.'},
+    {s:'rzel',t:"Good morning, love! I made breakfast. Define 'made'. Define 'breakfast'.",m:'smile',c:[['Eat it anyway',30,"You're the bravest farmer I know. And the sweetest."],['Cook together',35,"Teach me your secrets. Cooking ones. Also the others."]]}]},
+  {id:'rz14',h:14,title:'Anniversary Picnic',cond:()=>relOf('rzel').married,steps:[{s:'narr',t:'Rzel spreads a blanket by the pond with chocolate, melon slices, and a little hand-written card.'},
+    {s:'rzel',t:"Happy anniversary. Read the card later. It says I'd choose you in every season, every year.",m:'blush',c:[['Read it now',40,"(He covers his helmet with both hands.) Not in front of me! ...Okay. I love you too."],['Kiss his helmet',40,"Clink! Ha! ...Worth it."]]}]}],
+ mabel:[
+  {id:'m2',h:2,title:'Garden Gloves',steps:[{s:'narr',t:'Mabel is kneeling in her garden, struggling with a stubborn weed.'},{s:'mabel',t:"These old hands aren't what they used to be, dear.",c:[['Pull the weed for her',30,"Oh, thank you! You have a farmer's grip."],['Give gardening tips',15,"Ha! Teaching me to garden? Cheeky. I like you."]]}]},
+  {id:'m4',h:4,title:'Old Photographs',steps:[{s:'mabel',t:"Come look - this is me and my Harold at the harvest dance. He stepped on my toes all night.",c:[['"You look beautiful."',30,"Oh, stop it. ...Don't stop."],['Ask about Harold',35,"He planted that apple tree by the pond. Every spring, it blooms for me."]]}]}],
+ pip:[
+  {id:'p2',h:2,title:'The Big One',steps:[{s:'narr',t:'Pip is yanking on his fishing rod with all his might.'},{s:'pip',t:"HELP! It's the BIG ONE!",c:[['Grab the rod too',30,"WE DID IT! ...It's a boot. BEST BOOT EVER!"],['Cheer him on',20,"I GOT IT! ...It's a boot. Still counts!"]]}]},
+  {id:'p4',h:4,title:'Secret Club',steps:[{s:'pip',t:"You're officially in my secret club! You have to do the secret handshake.",c:[['Do the handshake',30,"Perfect! Now you're a member FOREVER."],['Make up a new one',35,"WHOA. That's way better. You're vice-president now."]]}]}]};
+function findEvent(id,eid){return (HEART_EVENTS[id]||[]).find(e=>e.id==eid);}
+function pendingEvent(id){const R=relOf(id),h=heartsOf(id);if(R.evDay==G.day)return null;
+  return (HEART_EVENTS[id]||[]).find(e=>!e.manual&&h>=e.h&&!R.seen.includes(e.id)&&(!e.cond||e.cond()));}
+function startEvent(id,eid){const ev=findEvent(id,eid);if(!ev)return;shopOpen=false;const R=relOf(id);R.evDay=G.day;
+  dlg={npc:id,event:{id:eid,ev,i:0,queue:ev.steps.slice()},sel:0};showEventStep();}
+function showEventStep(){const E=dlg.event,st=E.queue[E.i];if(!st){endEvent();return;}
+  dlg.name=st.s=='narr'?'':NPCDEF[st.s].name;dlg.speaker=st.s;dlg.mood=st.m||'normal';dlg.text=st.t;dlg.sel=0;
+  dlg.choices=st.c?st.c.map((c,i)=>[c[0],'ev:'+i]):[['Next','ev:next']];}
+function endEvent(){const E=dlg.event,R=relOf(dlg.npc);if(!R.seen.includes(E.id))R.seen.push(E.id);
+  if(E.id=='wedding'){R.married=true;R.engaged=false;rzS().mode='counter';npcSnap('rzel');}
+  dlg=null;game.msg('\u2665 '+E.ev.title+' - event complete');}
+function eventChoose(a){const E=dlg.event,st=E.queue[E.i];
+  if(a!='ev:next'&&st.c){const c=st.c[+a.slice(3)];addRel(dlg.npc,c[1]);E.queue.splice(E.i+1,0,{s:st.s,t:c[2],m:c[1]<0?'mad':c[1]>=30?'blush':'smile'});}
+  E.i++;showEventStep();}
+
+// ---------- Talking ----------
+function talkNPC(id){if(id=='rzel'){talkRzel();return;}const R=relOf(id);
+  const ev=pendingEvent(id);if(ev){startEvent(id,ev.id);return;}
+  if(R.talkDay!=G.day){R.talkDay=G.day;addRel(id,15);}
+  dlg={npc:id,name:NPCDEF[id].name,text:chatLine(id),sel:0,choices:[['Chat','chat'],['Your day?','day'],['Gift','gift'],['Bye','bye']]};}
+function rzChoices(){const r=rzS(),c=[['Chat','chat'],['Your day?','day'],['Flirt','flirt'],['Gift','gift']];
+  if(r.mode=='counter'){if(shopIsOpen())c.push(['Shop','shop']);c.push(['Follow me','follow']);}
+  else if(r.mode=='follow'){c.push(['Stay here','stay'],['Go back','home']);}
+  else c.push(['Follow me','follow'],['Go back','home']);
+  if(isHalloween()&&schedNow('rzel')[2]=='candy'&&G.hwCandy!=G.day)c.push(['Trick or treat','candy']);
+  c.push(['Bye','bye']);return c;}
+function talkRzel(){const r=rzS(),R=relOf('rzel');rzMood='normal';
+  const ev=pendingEvent('rzel');if(ev){startEvent('rzel',ev.id);return;}
+  let text=r.mode=='follow'?"Right behind you, farmer. Where to?":r.mode=='stay'?"Holding my ground. Want me back on the road?":greetLine(R.mem.lastVisit!=G.day);
+  R.mem.lastVisit=G.day;if(R.talkDay!=G.day){R.talkDay=G.day;addRel('rzel',15);}
+  const h=heartsOf('rzel');rzMood=R.married||R.dating||h>=6?'blush':h>=3?'smile':'normal';
+  dlg={npc:'rzel',name:NPCDEF.rzel.name,text,mood:rzMood,sel:0,choices:rzChoices()};}
+function choose(i){const c=dlg.choices[i];if(!c)return;const a=c[1],id=dlg.npc||'rzel';
+  if(a.startsWith('ev:')){eventChoose(a);return;}
+  if(a=='gift'){const items=giftable();if(!items.length){dlg.text=id=='rzel'?giftRzel():"You don't have anything to give right now.";dlg.mood=rzMood;return;}
+    dlg.back=dlg.choices;dlg.choices=items.slice(0,6).map(k=>[itemName(k).replace('Moonstone ','').replace('Chocolate','Choco')+' x'+G.inv[k],'give:'+k]).concat([['Back','back']]);dlg.sel=0;dlg.text='What will you give '+NPCDEF[id].name+'?';return;}
+  if(a=='back'){dlg.choices=dlg.back||[['Bye','bye']];dlg.sel=0;return;}
+  if(a.startsWith('give:')){const t=giveGift(id,a.slice(5));if(!dlg)return;dlg.mood=rzMood;dlg.choices=(dlg.back||[]).filter(x=>x[1]!='gift');dlg.sel=0;aiSay(id,'gift',t);return;}
+  if(a=='chat'){relOf(id).mem.chats++;rzMood=id=='rzel'?(heartsOf('rzel')>=6?'blush':'smile'):'normal';dlg.mood=rzMood;aiSay(id,'chat',chatLine(id));return;}
+  if(a=='day'){dlg.mood='normal';aiSay(id,'day',dayLine(id));return;}
+  if(a=='flirt'){const t=flirtLine();dlg.mood=rzMood;rzFlash(rzMood);aiSay(id,'flirt',t);return;}
+  if(a=='candy'){G.hwCandy=G.day;G.inv.chocolate+=2;dlg.text="Trick or treat? Here - two chocolates for my favorite little monster. Er, farmer.";dlg.mood='smile';dlg.choices=dlg.choices.filter(x=>x[1]!='candy');return;}
+  dlg=null;
+  if(a=='shop'){if(shopIsOpen())shopOpen=true;else game.msg(shopClosedMsg());}
+  else if(a=='follow'){rzSet('follow');game.msg('Rzel: "Lead the way!"');}
+  else if(a=='stay'){rzSet('stay');game.msg('Rzel: "I\'ll wait right here."');}
+  else if(a=='home'){rzSet('home');game.msg('Rzel heads back to his routine.');}}
+function drawHeart(x,y,on,sc){sc=sc||2;const M=['.##.##.','#######','#######','.#####.','..###..','...#...'];M.forEach((r,j)=>{for(let i=0;i<7;i++)if(r[i]=='#'){ctx.fillStyle=on?'#e8344a':'#b99a78';ctx.fillRect(x+i*sc,y+j*sc,sc,sc);}});if(on){ctx.fillStyle='#ffc0c8';ctx.fillRect(x+sc,y+sc,sc,sc);}}
+function npcPortrait(id,x,y,w,h,mood){if(id=='rzel'){const pm=SPR['rzel_p_'+(mood||'normal')];if(pm){const ph=Math.round(pm.height*w/pm.width);ctx.drawImage(pm,x,y+Math.floor((h-ph)/2),w,ph);}return;}
+  const s=SPR[NPCDEF[id].sheet];if(s)ctx.drawImage(s,4,0,40,38,x,y+Math.floor((h-w*38/40)/2),w,Math.round(w*38/40));}
+function drawDialogue(){if(!dlg)return;const id=dlg.npc||'rzel',ev=!!dlg.event,narr=ev&&dlg.speaker=='narr',who=narr?null:(ev?dlg.speaker:id);
+  const w=Math.min(560,cssW-16),n=dlg.choices.length,per=Math.min(n,4),rows=Math.ceil(n/per),lines=wrapText(dlg.text,w-(narr?32:100)),h=Math.max(92,lines.length*17+40)+8+rows*34,x=cssW/2-w/2,
+    y=portraitTouch?cssH-h-8:Math.min(cssH-h-110,cssH*0.62);
+  if(ev){ctx.fillStyle='rgba(10,5,20,0.45)';ctx.fillRect(0,0,cssW,cssH);ctx.fillStyle='#000';ctx.fillRect(0,0,cssW,34);
+    txt('\u2665 Heart Event: '+dlg.event.ev.title,cssW/2,23,{s:14,c:'#ffb0c0',a:'center'});}
+  if(who=='rzel')drawVN(x+w-8,y+Math.min(60,h*0.5),Math.min(y+40,cssH*0.5));
+  panel(x,y,w,h);
+  if(!narr){ctx.fillStyle='#c99a62';ctx.fillRect(x+10,y+10,68,72);ctx.fillStyle='#3b2414';ctx.fillRect(x+10,y+10,68,1);ctx.fillRect(x+10,y+10,1,72);npcPortrait(who,x+12,y+12,64,72,dlg.mood);
+    txt(NPCDEF[who].name,x+88,y+26,{s:15,c:'#8a2e1e'});ctx.font='bold 15px monospace';const hx=x+88+ctx.measureText(NPCDEF[who].name).width+8,cp=heartCap(who),hh=heartsOf(who),sp=Math.min(10,Math.floor((x+w-12-hx)/cp));
+    for(let i=0;i<cp;i++)drawHeart(hx+i*sp,y+17,i<hh,1);}
+  lines.forEach((l,i)=>txt(l,x+(narr?16:88),y+48+i*17,{s:13,b:!narr,c:narr?'#5a3a6a':undefined}));
+  dlg.rects=[];const gap=6,bw=Math.min(150,(w-24-gap*(per-1))/per);
+  dlg.choices.forEach((c,i)=>{const r=Math.floor(i/per),col=i%per,inRow=Math.min(per,n-r*per),bx0=x+w-12-(bw*inRow+gap*(inRow-1)),bx=bx0+col*(bw+gap),by=y+h-6-(rows-r)*34;
+    dlg.rects.push([bx,by,bw,28]);ctx.fillStyle='#2b1a0e';ctx.fillRect(bx,by,bw,28);
+    ctx.fillStyle=i==dlg.sel?'#d8443a':'#8a5530';ctx.fillRect(bx+2,by+2,bw-4,24);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(bx+2,by+2,bw-4,2);
+    let fs=bw<110?11:13;ctx.font='bold '+fs+'px monospace';while(fs>8&&ctx.measureText(c[0]).width>bw-8){fs--;ctx.font='bold '+fs+'px monospace';}txt(c[0],bx+bw/2,by+19,{s:fs,c:'#fff3d6',a:'center'});});}
+function dlgKey(k,e){const n=dlg.choices.length,per=Math.min(n,4);
+  if(k=='arrowleft'||k=='a'){dlg.sel=(dlg.sel+n-1)%n;e.preventDefault();}
+  else if(k=='arrowright'||k=='d'){dlg.sel=(dlg.sel+1)%n;e.preventDefault();}
+  else if(k=='arrowup'||k=='w'){dlg.sel=(dlg.sel-per+n)%n;e.preventDefault();}
+  else if(k=='arrowdown'||k=='s'){dlg.sel=(dlg.sel+per)%n;e.preventDefault();}
+  else if(k>='1'&&k<='9'&&+k<=n)choose(+k-1);
+  else if(k=='g'){const gi=dlg.choices.findIndex(c=>c[1]=='gift');if(gi>=0)choose(gi);}
+  else if(k==' '||k=='enter'||k=='e'){e.preventDefault();choose(dlg.sel);}
+  else if(k=='escape'&&!dlg.event){dlg=null;}}
+
+// ---------- Social panel ----------
+let socialOpen=false;
+function drawSocial(){if(!socialOpen)return;const ids=Object.keys(NPCDEF),w=Math.min(520,cssW-16),rh=92,h=50+ids.length*rh,x=cssW/2-w/2,y=Math.max(8,(cssH-h)/2-(portraitTouch?60:0));
+  panel(x,y,w,h);txt('RELATIONSHIPS',x+16,y+28,{s:16,c:'#8a2e1e'});txt('tap / R to close',x+w-14,y+28,{s:10,a:'right',b:false});
+  ids.forEach((id,i)=>{const yy=y+40+i*rh,R=relOf(id),d=RELDEF[id];ctx.fillStyle='#d9b07a';ctx.fillRect(x+10,yy,w-20,rh-6);ctx.fillStyle='#c99a62';ctx.fillRect(x+14,yy+4,56,60);
+    npcPortrait(id,x+16,yy+6,52,56,'normal');txt(NPCDEF[id].name,x+80,yy+18,{s:14,c:'#3b2414'});txt(statusOf(id),x+w-18,yy+18,{s:12,c:R.married?'#b5306a':R.dating||R.engaged?'#d8443a':'#6b3a1a',a:'right'});
+    const cp=heartCap(id),hh=heartsOf(id),sp=Math.min(16,Math.floor((w-110)/cp));for(let k=0;k<cp;k++)drawHeart(x+80+k*sp,yy+26,k<hh,sp>=15?2:1);
+    const kn=Object.entries(R.known),lv=kn.filter(e=>e[1]=='love').map(e=>itemName(e[0])),lk=kn.filter(e=>e[1]=='like').map(e=>itemName(e[0]));
+    txt('Birthday: '+cap1(d.bday[0])+' '+d.bday[1]+(isBday(id)?'  (TODAY!)':''),x+80,yy+52,{s:11,b:false});
+    txt('Loves: '+(lv.join(', ')||'???')+'   Likes: '+(lk.join(', ')||'???'),x+80,yy+68,{s:11,b:false});
+    const gifted=R.giftDay==G.day,talked=R.talkDay==G.day;txt((talked?'\u2713 talked':'\u2022 talk')+'  '+(gifted?'\u2713 gift':'\u2022 gift'),x+16,yy+80,{s:10,b:false,c:'#6b3a1a'});});}
+
+// ---------- Shop (now with bouquet + pendant) ----------
+function shopGoods(){const g=Object.keys(CROPS).map(c=>({k:c+'_seed',name:CROPS[c].name+' seed',price:CROPS[c].seedPrice,sub:CROPS[c].days+' days, sells '+CROPS[c].sell+'g',icon:'icon_seed_'+c}));
+  g.push({k:'bouquet',name:'Bouquet',price:200,sub:'Give at 8 hearts to start dating',icon:null,color:'#e86a9a'});
+  if(relOf('rzel').dating&&!relOf('rzel').married)g.push({k:'pendant',name:'Moonstone Pendant',price:2000,sub:'A proposal (dating + 10 hearts)',icon:null,color:'#9ad8ff'});return g;}
+function shopKey(k){if(k=='escape'||k=='e'){shopOpen=false;return;}const g=shopGoods(),i=+k-1;
+  if(i>=0&&i<g.length){const it=g[i];if(G.gold>=it.price){G.gold-=it.price;G.inv[it.k]=(G.inv[it.k]||0)+1;game.msg('Bought '+it.name+'.');}else game.msg('Not enough gold.');}
+  if(k=='s'){let s=0;for(const c in CROPS){s+=G.inv[c]*CROPS[c].sell;G.inv[c]=0;}for(const it in ITEMS){if(!ITEMS[it].sell)continue;s+=G.inv[it]*ITEMS[it].sell;G.inv[it]=0;}G.gold+=s;game.msg('Sold goods for '+s+'g.');}}
+function drawShop(){const g=shopGoods(),w=Math.min(460,cssW-16),fs=w<420?11:14,rh=32,H2=60+g.length*rh+64,x=cssW/2-w/2,y=Math.max(8,Math.min(120,cssH/2-H2/2-40));
+  if(cssW-(x+w)>=110)drawVN(0,y+H2,Math.min(cssH*0.5,300),x+w+12);panel(x,y,w,H2);
+  txt('GENERAL STORE',x+16,y+30,{s:fs+3,c:'#8a2e1e'});icon('icon_coin',x+w-110,y+14,2);txt(G.gold+'g',x+w-16,y+30,{s:fs+2,a:'right'});
+  g.forEach((it,i)=>{const yy=y+46+i*rh;if(it.icon)icon(it.icon,x+14,yy,2);else{ctx.fillStyle=it.color;ctx.fillRect(x+18,yy+4,20,20);ctx.fillStyle='#fff8';ctx.fillRect(x+20,yy+6,6,6);}
+    txt((i+1)+') '+it.name+'  '+it.price+'g',x+52,yy+14,{s:fs});txt(it.sub+(G.inv[it.k]?'  (have '+G.inv[it.k]+')':''),x+52,yy+27,{s:fs-2,b:false,c:'#6b3a1a'});});
+  txt('S) Sell crops & chocolate',x+16,y+H2-36,{s:fs});txt('E / Esc) Leave',x+16,y+H2-14,{s:fs});}
+
+// ---------- Sleep / pass out / day start ----------
+function sleep(){const pass=G.time>=26*60;
+  for(const k in G.soil){const s=G.soil[k];if(s.crop&&s.wet&&s.growth<CROPS[s.crop].days&&season()!='winter')s.growth++;s.wet=false;}
+  let lost=0;if(pass){lost=Math.min(1000,Math.floor(G.gold*0.1));G.gold-=lost;relOf('rzel').mem.passedOut=G.day+1;}
+  G.day++;G.time=6*60;G.energy=pass?Math.floor(G.maxE*0.6):G.maxE;G.p.x=16*TS+8;G.p.y=12*TS+10;G.p.dir='down';
+  startDay();npcSnapAll();snapCam();save(true);
+  game.msg('Day '+G.day+' ('+cap1(season())+' '+dayOfSeason()+') - '+ev().name+(pass?' - you passed out and lost '+lost+'g':''));
+  const R=relOf('rzel');
+  if(R.engaged&&G.day>=R.wedDay)G.pendingWedding=true;
+  if(R.married&&!G.pendingWedding){const r=Math.random();if(r<0.25){waterAll();setTimeout(()=>game.msg('Rzel watered the crops this morning \u2665'),1500);}
+    else if(r<0.45){G.inv.chocolate++;setTimeout(()=>game.msg('Rzel left you a chocolate on the table \u2665'),1500);}
+    setTimeout(()=>say('rzel',spouseLine(),5),600);}
+  if(isHalloween())setTimeout(()=>game.msg('Happy Pumpkin Night! The town is decorated.'),3200);}
+
+// ---------- Lighting ----------
+const LAMPS=[[31,15],[33,17],[39,17],[45,17],[21,17],[31,23],[31,30],[33,39],[39,41],[51,16],[11,15],[28,15]];
+let LC=null;
+function lightPts(){const L=[],nd=nightAmt();if(nd<=0.02)return L;
+  for(const [x,y] of LAMPS)if(map[y]&&map[y][x]==0)L.push([x*TS+4,y*TS-12,46]);
+  for(const b of BUILDINGS){const yy=(b.y+b.h-1)*TS;for(const xx of [b.x+1,b.x+b.w-2])L.push([xx*TS+8,yy+18,20]);}
+  if(isHalloween())for(const p of PUMPKINS)L.push([p[0]*TS+8,p[1]*TS+8,22]);
+  L.push([G.p.x,G.p.y-8,24]);return L;}
+function nightAmt(){const h=G.time/60,ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};return ss(18.5,21,h)*(1-0)+(h<6.5?1-ss(5.5,6.5,h):0);}
+function drawLighting(){const h=G.time/60,ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+  const morn=1-ss(6,8,h),eve=ss(16,18.5,h)*(1-ss(19,21,h)),night=ss(18.5,21,h),hw=isHalloween();
+  let c=[255,255,255];const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+  c=mix(c,[255,214,190],morn*0.8);c=mix(c,[255,186,130],eve);c=mix(c,hw?[78,52,120]:[52,62,122],night);
+  if(INB)c=mix(c,[255,232,196],night*0.85+eve*0.4);
+  if(c.every(v=>v>=254))return;
+  if(!LC){LC=document.createElement('canvas');}if(LC.width!=Math.ceil(cssW)||LC.height!=Math.ceil(cssH)){LC.width=Math.ceil(cssW);LC.height=Math.ceil(cssH);}
+  const l=LC.getContext('2d');l.globalCompositeOperation='source-over';l.fillStyle='rgb('+c.map(Math.round).join(',')+')';l.fillRect(0,0,LC.width,LC.height);
+  if(!INB&&night>0.05){l.globalCompositeOperation='lighter';const f=K/DPR;
+    for(const [wx,wy,r] of lightPts()){const sx=(wx-cam.x)*f,sy=(wy-cam.y)*f,R=r*f,g=l.createRadialGradient(sx,sy,0,sx,sy,R);
+      g.addColorStop(0,'rgba(255,190,110,'+(0.85*night)+')');g.addColorStop(0.5,'rgba(255,160,80,'+(0.35*night)+')');g.addColorStop(1,'rgba(0,0,0,0)');l.fillStyle=g;l.fillRect(sx-R,sy-R,R*2,R*2);}}
+  ctx.globalCompositeOperation='multiply';ctx.drawImage(LC,0,0,cssW,cssH);ctx.globalCompositeOperation='source-over';}
+
+// ---------- World extras: villagers, lamps, Halloween decor, rain on windows ----------
+const PUMPKINS=[[39,16],[41,16],[33,15],[15,16],[18,16],[36,17],[44,16],[30,16],[53,14],[37,40]];
+function drawWorldExtras(objs,now){const night=nightAmt();
+  for(const [x,y] of LAMPS)if(map[y]&&map[y][x]==0)objs.push({y:y*TS+12,d:()=>{shadow(x*TS+4,y*TS+12,3,1.2,0.3);drawS('lamp',x*TS,y*TS-13);if(night>0.1){ctx.fillStyle='rgba(255,230,150,'+(0.5*night)+')';ctx.fillRect(x*TS+2,y*TS-10,4,4);}}});
+  if(isHalloween()){for(const [x,y] of PUMPKINS)if(map[y]&&!SOLID.has(map[y][x]))objs.push({y:y*TS+12,d:()=>{shadow(x*TS+8,y*TS+13,5,1.6,0.3);drawS(night>0.2?'jack_lit':(x+y)%2?'jack':'pumpkin',x*TS+2,y*TS+3);}});
+    for(const x of [37,43])objs.push({y:COUNTER_Y*TS+1,d:()=>drawS('jack',x*TS+2,COUNTER_Y*TS-4)});
+    // bunting along the shop front
+    const b=BUILDINGS.find(b=>b.id=='shop');objs.push({y:(b.y+b.h-1)*TS+2,d:()=>{ctx.globalAlpha=b.alpha;for(let i=0;i<b.w*2;i++){const bx=b.x*TS+i*8,by=(b.y+b.h-1)*TS-6+(i%2);ctx.fillStyle=i%2?'#8a3ab0':'#f08a1a';ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+7,by);ctx.lineTo(bx+3.5,by+6);ctx.fill();}ctx.globalAlpha=1;}});}
+  for(const id of ['mabel','pip']){const rt=RT[id];if(rt.hidden)continue;const o=npcObj(id),def=NPCDEF[id],s=SPR[def.sheet];if(!s)continue;
+    objs.push({y:o.y,d:()=>{shadow(o.x,o.y+1,5,2,0.3);const row={down:0,up:1,left:2,right:3}[o.dir]||0,col=rt.moving?[1,2,3,2][Math.floor((rt.walk||0)/5)%4]:0,hh=def.h,ww=48*hh/72,bob=rt.moving?0:(Math.floor(now/800)%2)/3;
+      ctx.imageSmoothingEnabled=false;ctx.drawImage(s,col*48,row*72,48,72,Math.round((o.x-ww/2)*3)/3,o.y-hh+1+bob,ww,hh);
+      if(id=='pip'&&schedNow('pip')[2]=='fish'&&!rt.moving){ctx.strokeStyle='#5a3a1a';ctx.lineWidth=0.7;ctx.beginPath();ctx.moveTo(o.x+4,o.y-10);ctx.lineTo(o.x+10,o.y-18);ctx.stroke();ctx.strokeStyle='#ddd';ctx.lineWidth=0.4;ctx.beginPath();ctx.moveTo(o.x+10,o.y-18);ctx.lineTo(o.x+11,o.y+10);ctx.stroke();ctx.fillStyle='#e04040';ctx.fillRect(o.x+10.5,o.y+10+Math.sin(now/300),1.5,1.5);}}});}}
+function drawWindowRain(now){if(!INB)return;const b=INB,yy=(b.y+b.h-1)*TS;ctx.fillStyle='rgba(160,200,255,0.8)';
+  for(let x=b.x;x<b.x+b.w;x++){const tl=(x==b.x+1||x==b.x+b.w-2||(x==b.x+b.w-3&&b.w>8));if(!tl)continue;for(let i=0;i<4;i++){const ry=(now/40+i*7+x*13)%9;ctx.fillRect(x*TS+5+i*2,yy+4+ry,0.6,2);}}}
+
+// ---------- Per-frame town update (called from update) ----------
+function updateTown(dt){const b=bldInside(G.p.x,G.p.y);INB=b;if(b&&b!==lastINB)onEnterBuilding(b);lastINB=b;updateBubbles(dt);
+  if(G.pendingWedding&&!dlg&&!shopOpen&&!cheatOpen){G.pendingWedding=false;startEvent('rzel','wedding');}}
+
+// ---------- DEV menu (tabbed: Character / Item / Time / Weather) ----------
+let cheatTab='char',cheatNpc='rzel';
+function cheatAct(a){const p=a.split(':');
+  if(p[0]=='tab'){cheatTab=p[1];}
+  else if(p[0]=='tog'){CHEAT[p[1]]=!CHEAT[p[1]];}
+  else if(p[0]=='npc'){cheatNpc=p[1];}
+  else if(p[0]=='hearts'){const R=relOf(cheatNpc),n=+p[1];if(cheatNpc=='rzel'&&n>8&&!R.dating)R.dating=true;if(cheatNpc=='rzel'&&n>10&&!R.married){R.married=true;R.dating=true;}R.pts=Math.min(heartCap(cheatNpc),n)*100;game.msg(NPCDEF[cheatNpc].name+' hearts: '+heartsOf(cheatNpc));}
+  else if(p[0]=='status'){const R=relOf('rzel');R.dating=p[1]!='friend';R.engaged=p[1]=='engaged';R.married=p[1]=='married';if(p[1]=='engaged')R.wedDay=G.day+3;if(R.married)rzS().mode='counter';RT.rzel.spot=null;game.msg('Rzel status: '+statusOf('rzel'));}
+  else if(p[0]=='event'){toggleCheats();startEvent(p[1],p[2]);return;}
+  else if(a=='evreset'){relOf(cheatNpc).seen=[];relOf(cheatNpc).evDay=0;game.msg('Heart events reset for '+NPCDEF[cheatNpc].name);}
+  else if(a=='npc2me'){if(cheatNpc=='rzel')rzS().mode='stay';const o=npcObj(cheatNpc);o.x=G.p.x+14;o.y=G.p.y;RT[cheatNpc].path=[];RT[cheatNpc].hidden=false;if(cheatNpc!='rzel'){RT[cheatNpc].spot='manual';RT[cheatNpc].lock=G.time;}}
+  else if(a=='me2npc'){const o=npcObj(cheatNpc);G.p.x=o.x;G.p.y=o.y+14;if(blocked(G.p.x,G.p.y))G.p.y=o.y-14;snapCam();}
+  else if(a=='follow'){if(rzS().mode=='follow')rzSet('home');else{rzSet('follow');rzWarp();}game.msg('Rzel follow: '+(rzS().mode=='follow'?'ON':'OFF'));}
+  else if(p[0]=='item'){G.inv[p[1]]=(G.inv[p[1]]||0)+(+p[2]);game.msg('+'+p[2]+' '+itemName(p[1].replace('_seed',''))+(p[1].endsWith('_seed')?' seed':''));}
+  else if(a=='gold')G.gold+=1000; else if(a=='gold10k')G.gold+=10000; else if(a=='energy')G.energy=G.maxE;
+  else if(a=='grow'){let n=0;for(const k in G.soil){const s=G.soil[k];if(s.crop){s.growth=CROPS[s.crop].days;n++;}}game.msg(n+' crops ready to harvest.');}
+  else if(a=='water'){waterAll();game.msg('All soil watered.');}
+  else if(a=='sleep')sleep();
+  else if(p[0]=='hour'){G.time=+p[1];game.msg('Time set.');}
+  else if(a=='h1')G.time=Math.min(G.time+60,26*60-1);
+  else if(p[0]=='day'){G.day=Math.max(1,G.day+(+p[1]));startDay();npcSnapAll();game.msg('Day '+G.day+' - '+cap1(season())+' '+dayOfSeason());}
+  else if(p[0]=='season'){G.seasonSet=p[1]=='auto'?null:p[1];startDay();npcSnapAll();game.msg('Season: '+cap1(season()));}
+  else if(a=='halloween'){G.hwDay=G.hwDay==G.day?0:G.day;npcSnapAll();game.msg('Halloween today: '+(isHalloween()?'ON':'OFF'));}
+  else if(p[0]=='wx'){const e=EVENTS.find(e=>e.id==p[1]);G.weather=e.id;e.onDayStart&&e.onDayStart(game);initParticles();npcSnapAll();game.msg('Weather: '+e.name);}
+  else if(p[0]=='tp'){tp(p[1]);rzTrail=[];}
+  else if(a=='heart'){addRel(cheatNpc,100);game.msg(NPCDEF[cheatNpc].name+' hearts: '+heartsOf(cheatNpc));}
+  else if(a=='reset'){if(confirm('Reset save? This deletes your progress.')){localStorage.removeItem('meadowbrook_save');newGame();snapCam();game.msg('Save reset - new game.');}}
+  renderCheats();}
+function renderCheats(){const B=(a,l,on)=>'<button data-a="'+a+'"'+((on||(a.startsWith('tog:')&&CHEAT[a.slice(4)]))?' class="on"':'')+'>'+l+'</button>';const S=t=>'<div class="sec">'+t+'</div>';
+  const el=document.getElementById('cheat');const tabs=[['char','Character'],['item','Item'],['time','Time'],['weather','Weather']];
+  let h='<h3>DEV MENU <button data-a="close">X</button></h3><div class="tabs">'+tabs.map(t=>'<button data-a="tab:'+t[0]+'"'+(cheatTab==t[0]?' class="sel"':'')+'>'+t[1]+'</button>').join('')+'</div>';
+  if(cheatTab=='char'){const R=relOf(cheatNpc);
+    h+=S('NPC')+Object.keys(NPCDEF).map(id=>B('npc:'+id,NPCDEF[id].name,cheatNpc==id)).join('')+
+      '<div class="info">'+NPCDEF[cheatNpc].name+': '+heartsOf(cheatNpc)+'/'+heartCap(cheatNpc)+' hearts &middot; '+statusOf(cheatNpc)+'</div>'+
+      S('Set hearts')+[0,2,4,6,8,10,12,14].filter(n=>cheatNpc=='rzel'||n<=10).map(n=>B('hearts:'+n,n+'\u2665')).join('')+B('heart','+1\u2665');
+    if(cheatNpc=='rzel')h+=S('Status')+B('status:friend','Friend',!R.dating)+B('status:dating','Dating',R.dating&&!R.engaged&&!R.married)+B('status:engaged','Engaged',R.engaged)+B('status:married','Married',R.married);
+    h+=S('Heart events')+(HEART_EVENTS[cheatNpc]||[]).map(e=>B('event:'+cheatNpc+':'+e.id,(R.seen.includes(e.id)?'\u2713 ':'')+e.h+'\u2665 '+e.title)).join('')+B('evreset','Reset seen');
+    h+=S('Move')+B('npc2me','NPC to me')+B('me2npc','Me to NPC')+(cheatNpc=='rzel'?B('follow','Rzel follow',rzS().mode=='follow'):'')+B('tog:noclip','Noclip')+B('tog:speed','Speed x2')+
+      S('Teleport me')+Object.keys(TELE).map(n=>B('tp:'+n,cap1(n))).join('');}
+  else if(cheatTab=='item'){h+=S('Money & energy')+B('gold','+1000g')+B('gold10k','+10000g')+B('tog:gold','Inf gold')+B('energy','Full energy')+B('tog:energy','Inf energy');
+    const it=Object.keys(CROPS).map(c=>c+'_seed').concat(Object.keys(CROPS),Object.keys(ITEMS));
+    h+=S('Items')+it.map(k=>'<span class="it">'+itemName(k.replace('_seed',''))+(k.endsWith('_seed')?' seed':'')+' ('+(G.inv[k]||0)+') '+B('item:'+k+':1','+1')+B('item:'+k+':10','+10')+'</span>').join('');
+    h+=S('Farm')+B('grow','Grow all')+B('water','Water all');}
+  else if(cheatTab=='time'){const hr=Math.floor(G.time/60)%24,mm=Math.floor(G.time%60);
+    h+='<div class="info">Day '+G.day+' &middot; '+cap1(season())+' '+dayOfSeason()+' &middot; '+((hr%12)||12)+':'+String(mm).padStart(2,'0')+(hr<12?'am':'pm')+(isHalloween()?' &middot; HALLOWEEN':'')+'</div>'+
+      S('Set hour')+[[360,'6am'],[480,'8am'],[540,'9am'],[720,'12pm'],[900,'3pm'],[1080,'6pm'],[1260,'9pm'],[1440,'12am'],[1550,'1:50am']].map(t=>B('hour:'+t[0],t[1])).join('')+B('h1','+1h')+
+      S('Day')+B('sleep','Skip day (sleep)')+B('day:1','Day +1')+B('day:-1','Day -1')+B('day:7','Day +7')+
+      S('Season')+SEASONS.map(s=>B('season:'+s,cap1(s),season()==s)).join('')+B('season:auto','Auto',!G.seasonSet)+
+      S('Festival')+B('halloween','Halloween today',isHalloween());}
+  else{h+=S('Weather today')+EVENTS.map(e=>B('wx:'+e.id,e.name,G.weather==e.id)).join('')+S('Danger')+B('reset','Reset save');}
+  el.innerHTML=h;document.getElementById('cheatBadge').classList.toggle('show',Object.values(CHEAT).some(v=>v));}
+
 // ================= LOOP =================
 let last=performance.now();
 function loop(t){const dt=Math.min(0.05,(t-last)/1000);last=t;update(dt);render();requestAnimationFrame(loop);}
-makeSprites();makeRzel();makeRoofs();
-newGame(); if(localStorage.getItem('meadowbrook_save'))load(); snapCam(); requestAnimationFrame(loop);
+makeSprites();makeRzel();makeRoofs();makeDecor();makeSeasonal();
+newGame(); if(localStorage.getItem('meadowbrook_save'))load(); npcSnapAll(); snapCam(); requestAnimationFrame(loop);
 </script></body></html>
