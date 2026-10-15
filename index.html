@@ -1,9 +1,12 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Meadowbrook Acres</title>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta http-equiv="Cache-Control" content="no-cache"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><title>Meadowbrook Acres</title>
 <style>body{margin:0;background:#222;color:#eee;font-family:monospace;overflow:hidden}canvas{display:block;margin:0 auto;image-rendering:pixelated}
 html,body{height:100%;overscroll-behavior:none}
 body.touch{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;inset:0}
 body.touch canvas{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
-#tc{display:none}body.touch #tc{display:block}
+#tc{display:none}body.touch #tc{display:block}body.touch.hidectl #tc{display:none}
+@media (max-width:900px),(orientation:portrait){canvas{max-width:100vw;height:auto}}
+#ctlBtn{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(4px + env(safe-area-inset-bottom));background:rgba(40,25,15,.85);border:2px solid #e0b070;color:#ffe9b0;border-radius:8px;font:bold 13px monospace;padding:5px 10px}
+#ver{position:fixed;z-index:20;left:calc(4px + env(safe-area-inset-left));bottom:calc(4px + env(safe-area-inset-bottom));color:#ffe9b0;font:11px monospace;opacity:.8;pointer-events:none}
 .tb{position:fixed;z-index:5;background:rgba(40,25,15,.6);border:2px solid #e0b070;color:#ffe9b0;border-radius:12px;font:bold 15px monospace;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-tap-highlight-color:transparent}
 .tb.on{background:rgba(224,176,112,.8);color:#222}
 #dpad{position:fixed;left:calc(14px + env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));width:150px;height:150px;z-index:5;touch-action:none}
@@ -27,6 +30,7 @@ body.touch{background:#2a1c10}
 body.shop #top{display:none}}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
+<div id="ver">v2</div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -109,9 +113,15 @@ function handleKey(k,e){e=e||{preventDefault(){}};
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;handleKey(k,e);});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 cv.addEventListener('mousedown',()=>{if(!shopOpen)useTool();});
-let showHelp=true;
+let showHelp=true;try{if(innerWidth<=900||matchMedia('(orientation: portrait)').matches)showHelp=false;}catch(_){}
 // ================= TOUCH CONTROLS =================
-const isTouch=matchMedia('(pointer: coarse)').matches||'ontouchstart' in window||navigator.maxTouchPoints>0;
+function detectTouch(){let t=false;
+  try{t=t||matchMedia('(pointer: coarse)').matches||matchMedia('(any-pointer: coarse)').matches;}catch(_){}
+  try{t=t||('ontouchstart' in window)||navigator.maxTouchPoints>0;}catch(_){}
+  try{t=t||innerWidth<=900||matchMedia('(orientation: portrait)').matches||innerHeight>innerWidth;}catch(_){}
+  return t;}
+let isTouch=false;try{isTouch=detectTouch();}catch(_){isTouch=true;}
+let touchInited=false;
 const touchKeys={}; // pointerId -> dpad key
 function fitCanvas(){if(!document.body.classList.contains('touch'))return;const s=Math.min(innerWidth/cv.width,innerHeight/cv.height);
   cv.style.width=Math.floor(cv.width*s)+'px';cv.style.height=Math.floor(cv.height*s)+'px';
@@ -120,7 +130,7 @@ function dpadAt(x,y){const r=document.getElementById('dpad').getBoundingClientRe
   if(Math.hypot(cx,cy)<12||Math.hypot(cx,cy)>r.width)return null;return Math.abs(cx)>Math.abs(cy)?(cx<0?'arrowleft':'arrowright'):(cy<0?'arrowup':'arrowdown');}
 function syncDpad(){const act=new Set(Object.values(touchKeys));for(const d of ['arrowup','arrowdown','arrowleft','arrowright']){keys[d]=act.has(d);
   const el=document.querySelector('#dpad [data-d="'+d+'"]');el&&el.classList.toggle('on',act.has(d));}}
-function initTouch(){document.body.classList.add('touch');fitCanvas();addEventListener('resize',fitCanvas);addEventListener('orientationchange',()=>setTimeout(fitCanvas,200));
+function initTouch(){if(touchInited){document.body.classList.add('touch');fitCanvas();return;}touchInited=true;document.body.classList.add('touch');fitCanvas();addEventListener('resize',fitCanvas);addEventListener('orientationchange',()=>setTimeout(fitCanvas,200));
   const dp=document.getElementById('dpad');
   dp.addEventListener('pointerdown',e=>{e.preventDefault();try{dp.setPointerCapture(e.pointerId);}catch(_){}touchKeys[e.pointerId]=dpadAt(e.clientX,e.clientY);syncDpad();});
   dp.addEventListener('pointermove',e=>{if(e.pointerId in touchKeys){touchKeys[e.pointerId]=dpadAt(e.clientX,e.clientY);syncDpad();}});
@@ -133,9 +143,13 @@ function initTouch(){document.body.classList.add('touch');fitCanvas();addEventLi
     const i=hotbarHit(x,y);if(i>=0&&!shopOpen)G.tool=i;});
   for(const t of ['touchmove','gesturestart','dblclick'])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
   document.addEventListener('contextmenu',e=>e.preventDefault());
-  setInterval(()=>document.getElementById('shopUI').classList.toggle('show',shopOpen),document.body.classList.toggle('shop',shopOpen),100);}
+  setInterval(()=>{document.getElementById('shopUI').classList.toggle('show',shopOpen);document.body.classList.toggle('shop',shopOpen);},100);}
 function hotbarHit(x,y){const bx=cv.width/2-170,by=cv.height-60;if(y<by||y>by+52)return -1;for(let i=0;i<4;i++)if(x>=bx+i*58&&x<=bx+i*58+52)return i;return -1;}
-if(isTouch)initTouch();
+function safeInitTouch(){try{initTouch();}catch(err){console.error('initTouch failed',err);document.body.classList.add('touch');}}
+if(isTouch)safeInitTouch();
+addEventListener('resize',()=>{try{if(!document.body.classList.contains('touch')&&detectTouch())safeInitTouch();}catch(_){}});
+try{document.getElementById('ctlBtn').addEventListener('click',e=>{e.stopPropagation();const b=document.body;
+  if(!b.classList.contains('touch')){b.classList.remove('hidectl');safeInitTouch();}else b.classList.toggle('hidectl');});}catch(_){}
 function front(){const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[G.p.dir];
   return [Math.floor(G.p.x/TS)+d[0],Math.floor(G.p.y/TS)+d[1]];}
 function spend(n){if(G.energy<n){game.msg('Too tired! Go sleep.');return false;}G.energy-=n;return true;}
