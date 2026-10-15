@@ -1,6 +1,37 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><title>Meadowbrook Acres</title>
-<style>body{margin:0;background:#222;color:#eee;font-family:monospace;overflow:hidden}canvas{display:block;margin:0 auto;image-rendering:pixelated}</style></head>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Meadowbrook Acres</title>
+<style>body{margin:0;background:#222;color:#eee;font-family:monospace;overflow:hidden}canvas{display:block;margin:0 auto;image-rendering:pixelated}
+html,body{height:100%;overscroll-behavior:none}
+body.touch{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;inset:0}
+body.touch canvas{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+#tc{display:none}body.touch #tc{display:block}
+.tb{position:fixed;z-index:5;background:rgba(40,25,15,.6);border:2px solid #e0b070;color:#ffe9b0;border-radius:12px;font:bold 15px monospace;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-tap-highlight-color:transparent}
+.tb.on{background:rgba(224,176,112,.8);color:#222}
+#dpad{position:fixed;left:calc(14px + env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));width:150px;height:150px;z-index:5;touch-action:none}
+#dpad .tb{position:absolute;width:50px;height:50px}
+#act{position:fixed;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));z-index:5}
+#act .tb{position:static;width:52px;height:46px;margin:4px}
+#bUse{width:76px!important;height:76px!important;border-radius:50%!important;font-size:18px!important}
+.row{display:flex;justify-content:flex-end}
+#top{position:fixed;top:calc(6px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));display:flex;z-index:5}
+#top .tb{position:static;padding:6px 10px;margin-left:6px;border-radius:8px}
+#shopUI{display:none;position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:6}
+#shopUI.show{display:flex}#shopUI .tb{position:static;padding:10px 12px;margin:3px}
+@media (orientation:portrait){body.touch canvas{top:0;transform:translateX(-50%)}
+body.touch{background:#2a1c10}
+#act{width:140px}#act .row{flex-wrap:wrap}#act .tb{width:58px;height:50px}
+#bUse{width:120px!important;height:90px!important;border-radius:45px!important;font-size:22px!important}
+#dpad{width:168px;height:168px}
+#dpad,#act{bottom:calc(28px + env(safe-area-inset-bottom))}
+#shopUI{bottom:auto;top:calc(var(--ch,260px) + 8px);flex-wrap:wrap;justify-content:center;width:96vw}
+#top{top:calc(var(--ch,260px) + 8px);left:50%;right:auto;transform:translateX(-50%)}
+body.shop #top{display:none}}
+</style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
+<div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
+<div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
+<div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
+<div id="top"><div class="tb" data-k="h">Help</div><div class="tb" data-k="p">Save</div><div class="tb" data-k="l">Load</div></div>
+<div id="shopUI"><div class="tb" data-k="1">Buy 1</div><div class="tb" data-k="2">Buy 2</div><div class="tb" data-k="3">Buy 3</div><div class="tb" data-k="s">Sell all</div><div class="tb" data-k="escape">Leave</div></div></div>
 <script>
 "use strict";
 // ================= WEATHER / EVENT SYSTEM (data-driven) =================
@@ -67,17 +98,44 @@ function load(){const s=localStorage.getItem('meadowbrook_save');if(!s){game.msg
   buildMap();G=JSON.parse(s);initParticles();game.msg('Game loaded.');return true;}
 // ================= INPUT =================
 const keys={};
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;const k=e.key.toLowerCase();
+function handleKey(k,e){e=e||{preventDefault(){}};
   if(shopOpen){shopKey(k);return;}
   if('1234'.includes(k)&&k.length==1)G.tool=+k-1;
   if(k=='q'){const l=Object.keys(CROPS);G.seedSel=l[(l.indexOf(G.seedSel)+1)%l.length];}
   if(k==' '){e.preventDefault();useTool();}
   if(k=='f5'||k=='p'){e.preventDefault();save();}
   if(k=='l')load(); if(k=='h')showHelp=!showHelp;
-  if(k.startsWith('arrow'))e.preventDefault();});
+  if(k.startsWith('arrow'))e.preventDefault();}
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;handleKey(k,e);});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 cv.addEventListener('mousedown',()=>{if(!shopOpen)useTool();});
 let showHelp=true;
+// ================= TOUCH CONTROLS =================
+const isTouch=matchMedia('(pointer: coarse)').matches||'ontouchstart' in window||navigator.maxTouchPoints>0;
+const touchKeys={}; // pointerId -> dpad key
+function fitCanvas(){if(!document.body.classList.contains('touch'))return;const s=Math.min(innerWidth/cv.width,innerHeight/cv.height);
+  cv.style.width=Math.floor(cv.width*s)+'px';cv.style.height=Math.floor(cv.height*s)+'px';
+  document.documentElement.style.setProperty('--ch',Math.floor(cv.height*s)+'px');}
+function dpadAt(x,y){const r=document.getElementById('dpad').getBoundingClientRect(),cx=x-r.left-r.width/2,cy=y-r.top-r.height/2;
+  if(Math.hypot(cx,cy)<12||Math.hypot(cx,cy)>r.width)return null;return Math.abs(cx)>Math.abs(cy)?(cx<0?'arrowleft':'arrowright'):(cy<0?'arrowup':'arrowdown');}
+function syncDpad(){const act=new Set(Object.values(touchKeys));for(const d of ['arrowup','arrowdown','arrowleft','arrowright']){keys[d]=act.has(d);
+  const el=document.querySelector('#dpad [data-d="'+d+'"]');el&&el.classList.toggle('on',act.has(d));}}
+function initTouch(){document.body.classList.add('touch');fitCanvas();addEventListener('resize',fitCanvas);addEventListener('orientationchange',()=>setTimeout(fitCanvas,200));
+  const dp=document.getElementById('dpad');
+  dp.addEventListener('pointerdown',e=>{e.preventDefault();try{dp.setPointerCapture(e.pointerId);}catch(_){}touchKeys[e.pointerId]=dpadAt(e.clientX,e.clientY);syncDpad();});
+  dp.addEventListener('pointermove',e=>{if(e.pointerId in touchKeys){touchKeys[e.pointerId]=dpadAt(e.clientX,e.clientY);syncDpad();}});
+  for(const t of ['pointerup','pointercancel','lostpointercapture'])dp.addEventListener(t,e=>{delete touchKeys[e.pointerId];syncDpad();});
+  document.querySelectorAll('#tc [data-k]').forEach(b=>{
+    b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.classList.add('on');handleKey(b.dataset.k);});
+    for(const t of ['pointerup','pointercancel','pointerleave'])b.addEventListener(t,()=>b.classList.remove('on'));});
+  // tap hotbar slots on canvas to pick tool
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;
+    const i=hotbarHit(x,y);if(i>=0&&!shopOpen)G.tool=i;});
+  for(const t of ['touchmove','gesturestart','dblclick'])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
+  document.addEventListener('contextmenu',e=>e.preventDefault());
+  setInterval(()=>document.getElementById('shopUI').classList.toggle('show',shopOpen),document.body.classList.toggle('shop',shopOpen),100);}
+function hotbarHit(x,y){const bx=cv.width/2-170,by=cv.height-60;if(y<by||y>by+52)return -1;for(let i=0;i<4;i++)if(x>=bx+i*58&&x<=bx+i*58+52)return i;return -1;}
+if(isTouch)initTouch();
 function front(){const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[G.p.dir];
   return [Math.floor(G.p.x/TS)+d[0],Math.floor(G.p.y/TS)+d[1]];}
 function spend(n){if(G.energy<n){game.msg('Too tired! Go sleep.');return false;}G.energy-=n;return true;}
