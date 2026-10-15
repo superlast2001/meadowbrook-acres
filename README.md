@@ -31,7 +31,7 @@ Press ` or F2 (desktop), tap the version label (e.g. "v0.09") 5 times quickly, o
 Rzel (silver horned helmet-mask, half cyber-armor) stands behind the shop counter with a 2-frame idle (breathing + peace sign). Use Hand on him or the counter: greeting with choices Shop / Follow me / Bye. Following, he trails ~1.5 tiles behind, walks around obstacles via your trail, and warps to you if stuck or >10 tiles away. Hand on him while away: Stay here / Go back to shop (or Follow me). While he's away the counter shows a "Rzel is out" sign and the shop is closed. Follow state is saved. Dev cheat: "Rzel follow". Override art with `ASSETS.shopkeeper` (24x40; replaces all his frames). Sprite keys: shopkeeper_0/1, rzel_{down,up,left,right}_{0,1,2}.
 
 ## Versioning
-The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.17; next: v0.0.0.18, ...).
+The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.18; next: v0.0.0.19, ...).
 
 ### Rzel friendship (v0.10)
 0-5 hearts (100 pts each) shown in his dialogue box. Talking once per day: +15. One Gift per day (dialogue choice; gives your best item): chocolate = favorite +80, melon/corn = liked +45, radish = neutral +20. Greetings are tiered by hearts (0-1 teasing, 2-3 flirty, 4-5 devoted) plus rain/chocolate-rain lines. Saved in the save file (`rzel: {pts, talkDay, giftDay}`). Dev cheats: +1 heart, Reset hearts.
@@ -45,3 +45,6 @@ Out in the world Rzel is drawn with the chibi sprites (`ASSETS.rzel_c_normal|blu
 
 ### Chibi farmer (v0.0.0.17)
 The player is now an original chibi farmer (straw hat, blue overalls) in Rzel's chibi style: big head, bold outlines, soft 3-tone shading. It's embedded as `ASSETS.farmer_sheet`: 4 directions x (idle + 3 walk frames), each 48x72, drawn at 16x24 world px to match chibi Rzel's pixel density. Hitboxes are unchanged. Remove the line to fall back to the procedural farmer.
+
+### v0.0.0.18
+The farmer's left/right frames are now true side profiles: face and body turned, hat brim forward, one eye, angled legs stepping forward and back with opposite arm swing (left mirrors right). The up/down walk frames lift the legs more clearly.
