@@ -31,7 +31,7 @@ Press ` or F2 (desktop), tap the version label (e.g. "v0.09") 5 times quickly, o
 Rzel (silver horned helmet-mask, half cyber-armor) stands behind the shop counter with a 2-frame idle (breathing + peace sign). Use Hand on him or the counter: greeting with choices Shop / Follow me / Bye. Following, he trails ~1.5 tiles behind, walks around obstacles via your trail, and warps to you if stuck or >10 tiles away. Hand on him while away: Stay here / Go back to shop (or Follow me). While he's away the counter shows a "Rzel is out" sign and the shop is closed. Follow state is saved. Dev cheat: "Rzel follow". Override art with `ASSETS.shopkeeper` (24x40; replaces all his frames). Sprite keys: shopkeeper_0/1, rzel_{down,up,left,right}_{0,1,2}.
 
 ## Versioning
-The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.27; next: v0.0.0.28, ...).
+The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.28; next: v0.0.0.29, ...).
 
 ### Rzel friendship (v0.10)
 0-5 hearts (100 pts each) shown in his dialogue box. Talking once per day: +15. One Gift per day (dialogue choice; gives your best item): chocolate = favorite +80, melon/corn = liked +45, radish = neutral +20. Greetings are tiered by hearts (0-1 teasing, 2-3 flirty, 4-5 devoted) plus rain/chocolate-rain lines. Saved in the save file (`rzel: {pts, talkDay, giftDay}`). Dev cheats: +1 heart, Reset hearts.
@@ -92,3 +92,9 @@ Rzel's world sprite now uses normal proportions (`ASSETS.rzel_world`) built from
 - Dialogue still uses large full-body FRONT + expression portraits.
 - Hitbox/shadow/depth adjusted for the smaller world sprite.
 - Preview: `v27-ares-scale.png` (Ares next to farmer, matching height).
+
+## v0.0.0.28
+- Ares art rebuilt as crisp pixel art: sheet frames box-downsampled to farmer density (48x72 cells -> 16x24 world), quantized to a ~28-colour palette with no dithering, hard alpha, 1px dark outline. No blur and no JPEG noise.
+- World: the front uses the sheet's own chibis. Up/left/right are chibified from the turnaround (bigger head, squashed body) because the sheet has no back/side chibis.
+- Dialogue: full-body FRONT from the turnaround (120x202) plus the 5 sheet expression busts (normal/tongue, smile, blush, mad, serious).
+- Previews: `v28-ares-world.png`, `v28-ares-portrait.png`.
