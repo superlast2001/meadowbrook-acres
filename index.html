@@ -36,7 +36,7 @@ body.shop #top{display:none}}
 #cheatBadge.show{display:block}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v7</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v8</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -608,7 +608,7 @@ function drawDialogue(){if(!dlg)return;const w=Math.min(560,cssW-16),lines=wrapT
     ctx.fillStyle=i==dlg.sel?'#d8443a':'#8a5530';ctx.fillRect(bx+2,by+2,bw-4,24);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(bx+2,by+2,bw-4,2);
     txt(c[0],bx+bw/2,by+19,{s:bw<110?11:13,c:'#fff3d6',a:'center'});});}
 // Rzel sprite (24x36): V-taper bodybuilder, left half bare skin, right half cyber-armor
-const RW=24,RH=36,RC={S:['#6e3a1c','#a35d2c','#cd8a4f','#f2b77f'],A:['#1b1e25','#323843','#4f5765','#8d97a8'],H:['#7d838e','#b3b9c3','#dde1e7','#ffffff'],
+const RW=24,RH=38,RC={S:['#6e3a1c','#a35d2c','#cd8a4f','#f2b77f'],A:['#1b1e25','#323843','#4f5765','#8d97a8'],H:['#7d838e','#b3b9c3','#dde1e7','#ffffff'],
   O:'#24140c',V:'#20242c',RE:'#ff3b3b',CR:'#3fc8a6',CRD:'#23876f',T:'#3ad6c6',PU:'#c46bff',GO:'#f2c53d',GOD:'#a87a18'};
 function rzBody(P,R,o){const {S,A,H,O,V,RE,CR,CRD,T,PU,GO,GOD}=RC,b=o.b||0,lg=o.leg||0,back=o.view=='back';
   const sk=back?A:S,ar=back?S:A; // from behind, the armored side is on the viewer's left
@@ -628,7 +628,11 @@ function rzBody(P,R,o){const {S,A,H,O,V,RE,CR,CRD,T,PU,GO,GOD}=RC,b=o.b||0,lg=o.
     R(12,17+b,1,7,RC.O);R(7,17+b,1,7,S[0]);R(16,17+b,1,7,A[0]);P(14,19+b,T);P(14,22+b,T);}
   else{R(11,12+b,2,12,S[0]);R(12,12+b,1,12,A[0]);}
   // briefs
-  const BR=['#3f8fe0','#5aa8f0','#f06aa8','#f8904a'];R(8,24,8,1,BR[0]);R(8,25,8,1,BR[1]);R(9,26,6,1,BR[2]);R(10,27,4,1,BR[3]);if(!back){P(11,25,'#fff');P(12,25,'#fff');}
+  const BR=['#d6f0ff','#2a8cff','#ff3fa4','#ff9a1f'],OL=RC.O;
+  R(8,23,8,1,OL);R(8,24,8,1,BR[0]);R(8,25,8,1,BR[1]);R(9,26,6,1,BR[2]);R(10,27,4,1,BR[3]);P(9,25,'#7cc0ff');P(14,25,'#ff7ac4');
+  for(const [x,y] of [[7,24],[7,25],[8,26],[9,27],[10,28],[11,28],[12,28],[13,28],[14,27],[15,26],[16,25],[16,24]])P(x,y,OL);
+  for(const [x,y] of [[7,26],[8,27],[9,28],[10,29]])P(x,y,sk[0]);for(const [x,y] of [[16,26],[15,27],[14,28],[13,29]])P(x,y,ar[0]);
+  if(!back){P(11,24,'#ffffff');P(12,24,'#ffffff');}
   // armor arm: big rounded pauldron, thick arm, fist on hip
   const ax=back?3:20,dir=back?-1:1;
   blob(P,[[ax,17.5+b,2.8],[ax+dir*0.3,22+b,2.4]],back?S:A,null);blob(P,[[ax+dir*0.3,25+b,1.9]],back?S:A,null);if(!back){R(19,21+b,3,1,T);P(20,25+b,T);}
@@ -639,12 +643,7 @@ function rzBody(P,R,o){const {S,A,H,O,V,RE,CR,CRD,T,PU,GO,GOD}=RC,b=o.b||0,lg=o.
   if(!back){R(6,15+b,1,9,S[0]);R(17,15+b,1,9,A[0]);}
   // neck + dog tag (front)
   if(!back){R(10,9+b,4,2,S[1]);P(9,10+b,GO);P(14,10+b,GO);P(10,11+b,GO);P(13,11+b,GO);R(11,12+b,2,2,GO);P(12,13+b,GOD);}
-  // helmet-mask
-  const hx=8;R(hx,1+b,8,9,H[2]);R(hx+1,0+b,6,1,H[2]);R(hx,1+b,1,9,H[1]);R(hx+7,1+b,1,9,H[1]);R(hx+2,1+b,4,1,H[3]);
-  P(hx,0+b,H[2]);P(hx+7,0+b,H[2]);P(hx-1,1+b,H[3]);P(hx-1,2+b,H[2]);P(hx-2,0+b,H[3]);P(hx+8,1+b,H[2]);P(hx+8,2+b,H[1]);P(hx+9,0+b,H[3]);
-  if(!back){R(hx+1,4+b,6,2,V);P(hx+2,4+b,RE);P(hx+5,4+b,RE);P(hx+1,4+b,'#ff9a9a');P(hx+6,4+b,'#ff9a9a');P(hx+3,2+b,H[1]);P(hx+4,2+b,H[1]);
-    R(hx+1,7+b,6,3,V);for(let i=0;i<3;i++)P(hx+2+i*2,8+b,H[0]);P(hx+1,6+b,'#e0405a');P(hx+6,6+b,'#e0405a');R(hx+8,1+b,1,4,CR);P(hx+9,2+b,CR);P(hx+9,0+b,CR);}
-  else{R(hx+3,0+b,2,8,CR);R(hx+4,0+b,1,8,CRD);R(hx+1,9+b,6,1,H[1]);}}
+}
 function rzSide(P,R,o){const {S,A,H,V,RE,CR,T,PU,GO,GOD}=RC,lg=o.leg||0,fl=lg==1?2:lg==2?-2:0;
   // far (armored) leg behind, near bare leg in front
   blob(P,[[12-fl,28.5,3],[12-fl,32,2]],A,null);R(10-fl,34,5,2,A[1]);P(13-fl,30,PU);
@@ -652,17 +651,24 @@ function rzSide(P,R,o){const {S,A,H,V,RE,CR,T,PU,GO,GOD}=RC,lg=o.leg||0,fl=lg==1
   for(let y=11;y<=24;y++){const hw=y<15?6:Math.round(6-(y-15)*0.35);for(let x=12-hw;x<12+hw;x++)P(x,y,S[1]);}
   blob(P,[[14.5,14,3.4]],S,null);R(12,17,5,1,S[0]);blob(P,[[8,13,3]],A,null); // big pec in front, armor shoulder behind
   for(let i=0;i<3;i++)blob(P,[[15,18.8+i*2,1.2]],S,null);
-  const BR=['#3f8fe0','#5aa8f0','#f06aa8','#f8904a'];R(8,24,9,1,BR[0]);R(8,25,9,1,BR[1]);R(9,26,7,1,BR[2]);
+  const BR=['#d6f0ff','#2a8cff','#ff3fa4','#ff9a1f'],OL=RC.O;R(8,23,9,1,OL);R(8,24,9,1,BR[0]);R(8,25,9,1,BR[1]);R(9,26,7,1,BR[2]);R(10,27,5,1,BR[3]);
+  for(const [x,y] of [[7,24],[7,25],[8,26],[9,27],[10,28],[11,28],[12,28],[13,28],[14,28],[15,27],[16,26],[17,25],[17,24]])P(x,y,OL);for(const [x,y] of [[8,27],[9,28],[10,29],[15,28],[16,27]])P(x,y,S[0]);
   const a=lg==1?2:lg==2?-2:0;blob(P,[[12,13,3.6]],S,null);blob(P,[[12+a*0.4,17.5,2.7],[12+a,22,2.3]],S,null);R(10+a,21,4,1,GO);blob(P,[[12+a,25,1.8]],S,null);
   P(17,12,GO);P(17,13,GO);P(17,14,GOD);
-  R(9,1,8,9,H[2]);R(10,0,6,1,H[2]);R(9,1,1,9,H[1]);R(11,1,4,1,H[3]);R(6,1,3,5,CR);P(7,0,CR);P(10,0,H[3]);
-  R(14,4,3,2,V);P(16,4,RE);R(14,7,3,3,V);P(15,8,RC.H[0]);}
-function makeRzel(){const out=RC.O;
-  for(let f=0;f<2;f++)spr('shopkeeper_'+f,RW,RH,(P,R)=>rzBody(P,R,{view:'front',b:f,arm:'down'}),out);
-  for(let f=0;f<3;f++){spr('rzel_down_'+f,RW,RH,(P,R)=>rzBody(P,R,{view:'front',arm:'down',leg:f}),out);
-    spr('rzel_up_'+f,RW,RH,(P,R)=>rzBody(P,R,{view:'back',arm:'down',leg:f}),out);
-    spr('rzel_right_'+f,RW,RH,(P,R)=>rzSide(P,R,{leg:f}),out);
-    spr('rzel_left_'+f,RW,RH,(P,R)=>rzSide((x,y,c)=>P(RW-1-x,y,c),(x,y,w,h,c)=>R(RW-x-w,y,w,h,c),{leg:f}),out);}
+}
+// Head/mask pixel maps (12 wide, drawn at x=6). h/l/m/d = metal highlight/light/mid/dark, n = navy guard, r = red, g = red glow, c/C = crest
+const RZ_HEAD={
+ front:["h..........d","hl........md",".hl.hhll.md.",".lhhhllllmdc",".lhhdlldmmdc",".lhllddlmmdc",".ldndlldndmC","lmnrrllrrnmd","lmnngllgnnmd",".mnnnnnnnnd.","..mrnnnnrd..","...nrnnrn...","....nrrn....",".....nn....."],
+ back:["h....cc....d","hl...cc...md",".hl.hcCl.md.",".lhhlcClmmd.",".lhhlcCmmmd.",".lhllcCmmmd.",".lhllcCmmmd.","lmllmcCmmmmd","lmlmmcCmmmmd",".mmmmcCmmdd.","..mmmmmmmd..","...dddddd...","",""],
+ side:["......h.....",".....hl.....","cc.hhlll....","cclhhllllm..",".clhlllllmd.",".clhllllmmd.",".clmllllnnd.","..lmlllnrgd.","..mmllmnnnn.","..mmmmnnrnn.","...mmnnrrn..","....dnnnnn..",".........n.."]};
+function rzHead(P,view,b){const H=RC.H,col={h:H[3],l:H[2],m:H[1],d:H[0],n:'#1e2440',r:'#ff3b3b',g:'#ffb4a4',c:RC.CR,C:RC.CRD};
+  RZ_HEAD[view].forEach((row,y)=>{for(let x=0;x<row.length;x++){const c=col[row[x]];if(c)P(6+x,y+b,c);}});}
+function makeRzel(){const out=RC.O,sh=(P,R)=>[(x,y,c)=>P(x,y+2,c),(x,y,w,h,c)=>R(x,y+2,w,h,c)];
+  const mk=(key,body,view,b,flip)=>spr(key,RW,RH,(P0,R0)=>{let P=P0,R=R0;if(flip){P=(x,y,c)=>P0(RW-1-x,y,c);R=(x,y,w,h,c)=>R0(RW-x-w,y,w,h,c);}const [p,r]=sh(P,R);body(p,r);rzHead(P,view,b||0);},out);
+  for(let f=0;f<2;f++)mk('shopkeeper_'+f,(P,R)=>rzBody(P,R,{view:'front',b:f,arm:'down'}),'front',f);
+  for(let f=0;f<3;f++){mk('rzel_down_'+f,(P,R)=>rzBody(P,R,{view:'front',arm:'down',leg:f}),'front');
+    mk('rzel_up_'+f,(P,R)=>rzBody(P,R,{view:'back',arm:'down',leg:f}),'back');
+    mk('rzel_right_'+f,(P,R)=>rzSide(P,R,{leg:f}),'side');mk('rzel_left_'+f,(P,R)=>rzSide(P,R,{leg:f}),'side',0,true);}
   spr('sign_out',20,14,(P,R)=>{R(0,0,20,11,'#8c5a36');R(1,1,18,9,'#efe0c0');R(3,3,14,1,'#b5452f');R(3,5,10,1,'#6b3a1a');R(3,7,12,1,'#6b3a1a');R(9,11,2,3,'#5a331a');},'#3b2414');}
 
 // ================= LOOP =================
