@@ -23,3 +23,6 @@ Camera follows the player on a 60x45 tile map (16px pixel-art tiles, 3x on deskt
 Set `ASSETS.<key> = 'url.png'` near the top of the script; the image replaces the procedural sprite of the same key (use the same pixel size). Run `listSpriteKeys()` in the browser console for every key and size (e.g. `tree_0 32x40`, `farmer_down_1 16x20`, `crop_corn_4 16x24`, `grass_0 16x16`).
 
 Saves from v1/v2 are migrated automatically onto the new map.
+
+## Dev cheat menu (v4)
+Press ` or F2 (desktop), tap the version label 5 times quickly, or tap DEV in the touch panel.
