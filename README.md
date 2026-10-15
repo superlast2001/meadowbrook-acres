@@ -15,3 +15,11 @@ Example:
 { id:'snow', name:'Snow', tint:'rgba(255,255,255,0.15)', trigger:(d,r)=>r<0.1,
   particle:{color:'#fff', shape:'square', count:120, speed:3} },
 ```
+
+## v3 visuals
+Camera follows the player on a 60x45 tile map (16px pixel-art tiles, 3x on desktop, ~9 tiles across on portrait phones). All art is generated procedurally at startup into offscreen canvases (`SPR`).
+
+## Replacing art (ASSETS)
+Set `ASSETS.<key> = 'url.png'` near the top of the script; the image replaces the procedural sprite of the same key (use the same pixel size). Run `listSpriteKeys()` in the browser console for every key and size (e.g. `tree_0 32x40`, `farmer_down_1 16x20`, `crop_corn_4 16x24`, `grass_0 16x16`).
+
+Saves from v1/v2 are migrated automatically onto the new map.
