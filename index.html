@@ -36,7 +36,7 @@ body.shop #top{display:none}}
 #cheatBadge.show{display:block}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v5</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v6</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -112,7 +112,7 @@ let G;
 function newGame(){ buildMap(); G={v:SAVE_V,day:1,time:6*60,gold:150,energy:100,maxE:100,
   p:{x:16*TS+8,y:16*TS+10,dir:'down'}, tool:0, soil:{}, pickups:[],
   inv:{radish_seed:5,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0}, seedSel:'radish',
-  weather:'sunny'}; startDay(); }
+  weather:'sunny',rz:{mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'}}; startDay(); }
 const game={msg(t){msgT=t;msgTime=3;}};
 let msgT='',msgTime=0,shopOpen=false,particles=[],walkDist=0,moving=false;
 function ev(){return EVENTS.find(e=>e.id==G.weather)||EVENTS[EVENTS.length-1];}
@@ -133,6 +133,7 @@ function migrate(s){
   for(const k in d)if(s[k]===undefined||s[k]===null)s[k]=d[k];
   s.inv=Object.assign({radish_seed:0,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0},s.inv||{});
   if(!CROPS[s.seedSel])s.seedSel='radish';
+  if(!s.rz||!isFinite(s.rz.x)||!['counter','follow','stay'].includes(s.rz.mode))s.rz={mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'};
   if(!s.v||s.v<3){const soil={};for(const k in s.soil){const [x,y]=k.split(',').map(Number);soil[(x+OX)+','+(y+OY)]=s.soil[k];}s.soil=soil;
     s.pickups=(s.pickups||[]).map(p=>({x:p.x+OX,y:p.y+OY,item:p.item}));
     if(s.p)s.p={x:s.p.x/2+OX*TS,y:s.p.y/2+OY*TS+2,dir:s.p.dir||'down'};}
@@ -148,7 +149,7 @@ function load(){const s=localStorage.getItem('meadowbrook_save');if(!s){game.msg
 const keys={};
 function handleKey(k,e){e=e||{preventDefault(){}};
   if(k=='`'||k=='f2'){e.preventDefault();toggleCheats();return;} if(cheatOpen){if(k=='escape')toggleCheats();return;}
-  if(dlg){if([' ','enter','e','escape','4'].includes(k)){e.preventDefault();closeDlg();}return;}
+  if(dlg){dlgKey(k,e);return;}
   if(shopOpen){shopKey(k);return;}
   if('1234'.includes(k)&&k.length==1)G.tool=+k-1;
   if(k=='q'){const l=Object.keys(CROPS);G.seedSel=l[(l.indexOf(G.seedSel)+1)%l.length];}
@@ -218,7 +219,8 @@ function useTool(){const [x,y]=front();if(x<0||y<0||x>=W||y>=H)return;const t=ma
   if(G.tool==0){ if(t==8&&!s&&spend(2)){G.soil[k]={wet:false,crop:null,growth:0};puff(x,y,'#8a5a36',8);} }
   else if(G.tool==1){ if(s&&spend(1)){s.wet=true;puff(x,y,'#8fc6ff',10);} }
   else if(G.tool==2){ const si=G.seedSel+'_seed'; if(s&&!s.crop){ if(G.inv[si]>0){G.inv[si]--;s.crop=G.seedSel;s.growth=0;} else game.msg('No '+CROPS[G.seedSel].name+' seeds.');}}
-  else { if(t==5){sleep();return;} if(t==6||(x==NPC.x&&y==NPC.y)){talkRzel();return;}
+  else { if(t==5){sleep();return;} {const [rx,ry]=rzTile();if(x==rx&&y==ry){talkRzel();return;}}
+    if(t==6){if(rzS().mode=='counter')talkRzel();else game.msg('Rzel is out. (Sign: "Back soon!")');return;}
     if(s&&s.crop&&s.growth>=CROPS[s.crop].days){G.inv[s.crop]++;game.msg('Harvested '+CROPS[s.crop].name+'!');puff(x,y,CROPS[s.crop].color,8);s.crop=null;s.growth=0;return;}
     const pi=G.pickups.findIndex(p=>p.x==x&&p.y==y); if(pi>=0){G.inv[G.pickups[pi].item]++;G.pickups.splice(pi,1);} }
 }
@@ -237,6 +239,7 @@ function update(dt){
   fx=fx.filter(f=>(f.t-=dt)>0);for(const f of fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=90*dt;}
   if(CHEAT.gold)G.gold=Math.max(G.gold,99999); if(CHEAT.energy)G.energy=G.maxE;
   if(shopOpen||cheatOpen||dlg)return;
+  updateRzel(dt);
   G.time+=dt*10; if(G.time>=26*60){game.msg('You collapsed from exhaustion...');sleep();}
   let dx=0,dy=0;
   if(keys['w']||keys['arrowup']){dy=-1;G.p.dir='up';} if(keys['s']||keys['arrowdown']){dy=1;G.p.dir='down';}
@@ -252,7 +255,7 @@ function update(dt){
   const px=Math.floor(G.p.x/TS),py=Math.floor((G.p.y-3)/TS);
   G.pickups=G.pickups.filter(pk=>{if(pk.x==px&&pk.y==py){G.inv[pk.item]++;game.msg('+1 '+ITEMS[pk.item].name);return false;}return true;});
 }
-function blocked(x,y){if(Math.floor(x/TS)==NPC.x&&Math.floor((y-2)/TS)==NPC.y)return true;if(CHEAT.noclip)return x<4||y<6||x>W*TS-4||y>H*TS-1;for(const [cx,cy] of [[x-5,y-5],[x+5,y-5],[x-5,y+1],[x+5,y+1]]){
+function blocked(x,y){if(G&&G.rz&&G.rz.mode!='follow'&&Math.abs(x-G.rz.x)<9&&Math.abs(y-G.rz.y)<6)return true;if(CHEAT.noclip)return x<4||y<6||x>W*TS-4||y>H*TS-1;for(const [cx,cy] of [[x-5,y-5],[x+5,y-5],[x-5,y+1],[x+5,y+1]]){
   const tx=Math.floor(cx/TS),ty=Math.floor(cy/TS);if(tx<0||ty<0||tx>=W||ty>=H||SOLID.has(map[ty][tx]))return true;}return false;}
 function tryMove(dx,dy){if(!blocked(G.p.x+dx,G.p.y+dy)){G.p.x+=dx;G.p.y+=dy;}}
 // ================= PROCEDURAL PIXEL ART =================
@@ -445,7 +448,7 @@ function render(){const now=performance.now();
   {const [fx2,fy2]=front(),a=0.55+Math.sin(now/180)*0.25,X=fx2*TS,Y=fy2*TS;ctx.fillStyle='rgba(255,250,220,'+a+')';
    for(const [cx,cy,w,hh] of [[0,0,4,1],[0,0,1,4],[12,0,4,1],[15,0,1,4],[0,15,4,1],[0,12,1,4],[12,15,4,1],[15,12,1,4]])ctx.fillRect(X+cx,Y+cy,w,hh);}
   for(const pk of G.pickups){const sx=pk.x*TS,sy=pk.y*TS,b=Math.sin(now/200+pk.x)*1.5;shadow(sx+8,sy+12,4,1.5,0.3);objs.push({y:sy+10,d:()=>drawS('item_'+pk.item,sx+2,sy+1+b)});}
-  {const f=Math.floor(now/(dlg||shopOpen?180:420))%2;objs.push({y:NPC.y*TS+14,d:()=>{const k=ASSETS.shopkeeper&&SPR.shopkeeper?'shopkeeper':'shopkeeper_'+f;shadow(NPC.x*TS+8,NPC.y*TS+15,7,2,0.3);drawS(k,NPC.x*TS,NPC.y*TS+16-32);}});}
+  drawRzel(objs,now);
   // player
   const px=Math.round(G.p.x),py=Math.round(G.p.y),fr=moving?[1,0,2,0][Math.floor(walkDist/5)%4]:0;
   shadow(px,py,6,2.2,0.3);objs.push({y:G.p.y,d:()=>drawS('farmer_'+G.p.dir+'_'+fr,px-8,py-19-(moving&&fr==0?1:0))});
@@ -529,7 +532,8 @@ function cheatAct(a){const p=a.split(':');
   else if(a=='sleep')sleep();
   else if(a=='h1')G.time=Math.min(G.time+60,26*60-1); else if(a=='t6')G.time=6*60; else if(a=='t18')G.time=18*60;
   else if(p[0]=='wx'){const e=EVENTS.find(e=>e.id==p[1]);G.weather=e.id;e.onDayStart&&e.onDayStart(game);initParticles();game.msg('Weather: '+e.name);}
-  else if(p[0]=='tp')tp(p[1]);
+  else if(p[0]=='tp'){tp(p[1]);rzTrail=[];}
+  else if(a=='follow'){if(rzS().mode=='follow')rzSet('home');else{rzSet('follow');rzWarp();}game.msg('Rzel follow: '+(rzS().mode=='follow'?'ON':'OFF'));}
   else if(a=='reset'){if(confirm('Reset save? This deletes your progress.')){localStorage.removeItem('meadowbrook_save');newGame();snapCam();game.msg('Save reset - new game.');}}
   renderCheats();}
 function renderCheats(){const B=(a,l)=>'<button data-a="'+a+'"'+(a.startsWith('tog:')&&CHEAT[a.slice(4)]?' class="on"':'')+'>'+l+'</button>';
@@ -539,7 +543,7 @@ function renderCheats(){const B=(a,l)=>'<button data-a="'+a+'"'+(a.startsWith('t
   '<div class="sec">Farm</div>'+B('grow','Grow all')+B('water','Water all')+B('seeds','+10 seeds')+
   '<div class="sec">Time</div>'+B('sleep','Next day')+B('h1','+1h')+B('t6','6am')+B('t18','6pm')+
   '<div class="sec">Weather today</div>'+EVENTS.map(e=>B('wx:'+e.id,e.name)).join('')+
-  '<div class="sec">Movement</div>'+B('tog:noclip','Noclip')+B('tog:speed','Speed x2')+
+  '<div class="sec">Rzel & movement</div>'+B('follow','Rzel follow')+B('tog:noclip','Noclip')+B('tog:speed','Speed x2')+
   '<div class="sec">Teleport</div>'+Object.keys(TELE).map(n=>B('tp:'+n,n[0].toUpperCase()+n.slice(1))).join('')+
   '<div class="sec">Danger</div>'+B('reset','Reset save');
   document.getElementById('cheatBadge').classList.toggle('show',Object.values(CHEAT).some(v=>v));}
@@ -548,51 +552,99 @@ document.getElementById('cheat').addEventListener('click',e=>{const b=e.target.c
 ['pointerdown','touchstart','mousedown'].forEach(t=>document.getElementById('cheat').addEventListener(t,e=>e.stopPropagation()));
 {let taps=[];document.getElementById('ver').addEventListener('pointerdown',e=>{e.stopPropagation();const n=performance.now();taps=taps.filter(t=>n-t<1500);taps.push(n);if(taps.length>=5){taps=[];toggleCheats();}});}
 document.getElementById('bDev').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();toggleCheats();});
-// ================= SHOPKEEPER NPC: Rzel =================
-const NPC={x:40,y:11,name:'Rzel'};let dlg=null;
-function talkRzel(){const L=G.weather=='chocolate'?["Whoa, chocolate's falling from the sky! Sweetest encore ever."]:G.weather=='rain'?["Rain's just the crowd cheering, farmer. Let's shred some seeds!"]:
-  ["Yo, farmer! Ready to rock some seeds?","Sun's out, amps up! What are we planting today?","Name's Rzel. I sell seeds and I play LOUD."];
-  dlg={name:NPC.name,text:L[G.day%L.length]};}
-function closeDlg(){dlg=null;shopOpen=true;}
-function dlgTap(){closeDlg();}
+// ================= SHOPKEEPER NPC: Rzel (counter / follow / stay) =================
+const NPC={x:40,y:11,name:'Rzel'},HOME_X=NPC.x*TS+8,HOME_Y=NPC.y*TS+14;let dlg=null,rzTrail=[],rzStuck=0,rzMoving=false,rzWalk=0;
+function rzS(){if(!G.rz||!isFinite(G.rz.x))G.rz={mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'};return G.rz;}
+function rzTile(){const r=rzS();return [Math.floor(r.x/TS),Math.floor((r.y-2)/TS)];}
+function greet(){return G.weather=='chocolate'?"Chocolate falling from the sky? Even the weather knows how to treat a customer.":G.weather=='rain'?"Rain? Good for the crops, good for business. What'll it be, farmer?":
+  ["Hey there, farmer! Peace! Need some seeds?","Name's Rzel. Best seeds in the valley - and that's a promise.","Looking strong today, farmer! Let's get you something to plant."][G.day%3];}
+function talkRzel(){const r=rzS();
+  if(r.mode=='counter')dlg={text:greet(),choices:[['Shop','shop'],['Follow me','follow'],['Bye','bye']]};
+  else if(r.mode=='follow')dlg={text:"Right behind you, farmer. Where to?",choices:[['Stay here','stay'],['Go back to shop','home'],['Bye','bye']]};
+  else dlg={text:"Holding my ground. Want me back on the road?",choices:[['Follow me','follow'],['Go back to shop','home'],['Bye','bye']]};
+  dlg.name=NPC.name;dlg.sel=0;}
+function rzSet(m){const r=rzS();if(m=='home'){puff(Math.floor(r.x/TS),Math.floor(r.y/TS),'#c9cdd5',10);r.mode='counter';r.x=HOME_X;r.y=HOME_Y;r.dir='down';}
+  else{r.mode=m;if(m=='follow')rzTrail=[];}}
+function choose(i){const c=dlg.choices[i],a=c[1];dlg=null;
+  if(a=='shop')shopOpen=true;
+  else if(a=='follow'){rzSet('follow');game.msg('Rzel: "Lead the way!"');}
+  else if(a=='stay'){rzSet('stay');game.msg('Rzel: "I\'ll wait right here."');}
+  else if(a=='home'){rzSet('home');game.msg('Rzel heads back to the shop.');}}
+function dlgKey(k,e){const n=dlg.choices.length;
+  if(k=='arrowleft'||k=='arrowup'||k=='a'||k=='w'){dlg.sel=(dlg.sel+n-1)%n;e.preventDefault();}
+  else if(k=='arrowright'||k=='arrowdown'||k=='d'||k=='s'){dlg.sel=(dlg.sel+1)%n;e.preventDefault();}
+  else if(k>='1'&&k<=String(n))choose(+k-1);
+  else if(k==' '||k=='enter'||k=='e'){e.preventDefault();choose(dlg.sel);}
+  else if(k=='escape'){dlg=null;}}
+function dlgTap(x,y){const rs=dlg.rects||[];for(let i=0;i<rs.length;i++){const r=rs[i];if(x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3]){choose(i);return;}}}
+function rzFree(x,y){for(const [cx,cy] of [[x-4,y-4],[x+4,y-4],[x-4,y+1],[x+4,y+1]]){const tx=Math.floor(cx/TS),ty=Math.floor(cy/TS);if(tx<0||ty<0||tx>=W||ty>=H||SOLID.has(map[ty][tx]))return false;}return true;}
+function rzWarp(){const r=rzS(),o={up:[0,1],down:[0,-1],left:[1,0],right:[-1,0]}[G.p.dir]||[0,1];
+  for(const [dx,dy] of [o,[1,0],[-1,0],[0,1],[0,-1]]){const x=G.p.x+dx*18,y=G.p.y+dy*18;if(rzFree(x,y)){r.x=x;r.y=y;rzTrail=[];rzStuck=0;return;}}
+  r.x=G.p.x;r.y=G.p.y;rzTrail=[];}
+function updateRzel(dt){const r=rzS();rzMoving=false;if(r.mode!='follow')return;
+  const lt=rzTrail[rzTrail.length-1];if(!lt||Math.hypot(lt[0]-G.p.x,lt[1]-G.p.y)>4)rzTrail.push([G.p.x,G.p.y]);if(rzTrail.length>400)rzTrail.shift();
+  const d=Math.hypot(G.p.x-r.x,G.p.y-r.y);if(d>TS*10||rzStuck>1.5){rzWarp();return;}
+  if(d<=TS*1.5){rzStuck=0;return;}
+  while(rzTrail.length>1&&Math.hypot(rzTrail[0][0]-r.x,rzTrail[0][1]-r.y)<3)rzTrail.shift();
+  const t=rzTrail[0]||[G.p.x,G.p.y],dx=t[0]-r.x,dy=t[1]-r.y,l=Math.hypot(dx,dy)||1,sp=Math.min(l,(d>TS*3?95:72)*(CHEAT.speed?2:1)*dt),ox=r.x,oy=r.y;
+  const mx=dx/l*sp,my=dy/l*sp;if(rzFree(r.x+mx,r.y))r.x+=mx;if(rzFree(r.x,r.y+my))r.y+=my;
+  const md=Math.hypot(r.x-ox,r.y-oy);if(md<sp*0.3)rzStuck+=dt;else rzStuck=0;
+  if(md>0.01){rzMoving=true;rzWalk+=md;r.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down');}}
+function drawRzel(objs,now){const r=rzS(),x=Math.round(r.x),y=Math.round(r.y);
+  objs.push({y:r.y,d:()=>{shadow(x,y+1,7,2,0.3);let k;
+    if(ASSETS.shopkeeper&&SPR.shopkeeper)k='shopkeeper';
+    else if(r.mode=='counter'||(!rzMoving&&r.dir=='down'))k='shopkeeper_'+Math.floor(now/(dlg||shopOpen?260:480))%2;
+    else k='rzel_'+r.dir+'_'+(rzMoving?[1,0,2,0][Math.floor(rzWalk/5)%4]:0);
+    drawS(k,x-8,y-30);}});
+  if(r.mode!='counter')objs.push({y:12*TS+13,d:()=>drawS('sign_out',40*TS-2,12*TS-6)});}
 function wrapText(t,maxW){ctx.font='bold 13px monospace';const out=[];let line='';for(const w of t.split(' ')){const tr=line?line+' '+w:w;if(ctx.measureText(tr).width>maxW&&line){out.push(line);line=w;}else line=tr;}if(line)out.push(line);return out;}
-function drawDialogue(){if(!dlg)return;const w=Math.min(560,cssW-16),lines=wrapText(dlg.text,w-100),h=Math.max(92,lines.length*17+60),x=cssW/2-w/2,
+function drawDialogue(){if(!dlg)return;const w=Math.min(560,cssW-16),lines=wrapText(dlg.text,w-100),h=Math.max(92,lines.length*17+40)+40,x=cssW/2-w/2,
   y=portraitTouch?cssH-h-8:Math.min(cssH-h-110,cssH*0.62);panel(x,y,w,h);
   ctx.fillStyle='#c99a62';ctx.fillRect(x+10,y+10,68,72);ctx.fillStyle='#3b2414';ctx.fillRect(x+10,y+10,68,1);ctx.fillRect(x+10,y+10,1,72);
   const s=SPR[ASSETS.shopkeeper?'shopkeeper':'shopkeeper_0'];if(s)ctx.drawImage(s,0,0,16,18,x+12,y+12,64,72);
-  txt(dlg.name,x+88,y+26,{s:15,c:'#8a2e1e'});lines.forEach((l,i)=>txt(l,x+88,y+50+i*17,{s:13}));
-  if(Math.floor(performance.now()/400)%2)txt('USE \u25B6',x+w-14,y+h-10,{s:11,a:'right',c:'#6b3a1a'});}
-function makeRzel(){for(let f=0;f<2;f++)spr('shopkeeper_'+f,16,32,(P,R)=>{const b=f;// bob
-  const W='#f4f4f2',WS='#b9bec8',V='#1c2026',GR='#5dff7a',GL='#b8ffc4',SC='#2b2533',SC2='#4a4058',SK='#d08a50',SKD='#94552c',SKL='#f0b47c',
-        PA='#a3a8b0',PAD='#767b84',PAL='#c9ccd2',BO='#26262c',BL='#5c5c66',CH='#c9cdd5',GU='#e0381e',GO='#ff9424',GY='#ffd640',SI='#dfe3ea',NK='#5a3a26';
-  // boots + chains (no bob)
-  R(3,27,4,5,BO);R(9,27,4,5,BO);R(2,31,5,1,BO);R(9,31,5,1,BO);P(4,28,BL);P(5,29,BL);P(4,30,BL);P(10,28,BL);P(11,29,BL);P(10,30,BL);P(3,29,CH);P(12,29,CH);P(2,30,CH);P(13,30,CH);P(3,31,'#6c6c76');P(13,31,'#6c6c76');
-  // baggy gray pants
-  R(3,20+b,10,8-b,PA);R(2,23+b,3,5-b,PA);R(11,23+b,3,5-b,PA);R(7,24+b,2,4-b,PAD);R(3,21+b,1,7-b,PAD);R(12,21+b,1,7-b,PAD);R(5,22+b,1,4,PAL);R(10,22+b,1,4,PAL);R(3,20+b,10,1,'#2a2530');
-  // scarf tail flowing behind left shoulder
-  R(0,11+b,2,2,SC);R(0,13+b,1,3,SC);
-  // shoulders / arms with bicep highlights, separated from torso by a dark seam
-  R(1,12+b,3,7,SK);R(12,12+b,3,5,SK);R(1,12+b,3,1,SKL);R(12,12+b,3,1,SKL);P(2,14+b,SKL);P(13,14+b,SKL);R(1,16+b,1,3,SKD);R(14,13+b,1,4,SKD);R(4,13+b,1,6,SKD);R(11,13+b,1,4,SKD);
-  // chest: two pecs + six-pack
-  R(5,12+b,6,8,SK);R(5,12+b,2,2,SKL);R(8,12+b,2,2,SKL);R(5,14+b,6,1,SKD);R(7,12+b,1,8,SKD);
-  for(const yy of [15,17]){R(5,yy+b,2,1,SKL);R(8,yy+b,2,1,SKL);R(5,yy+1+b,6,1,SKD);}R(5,19+b,6,1,SK);P(7,19+b,SKD);
-  // guitar neck: dark fretboard with silver frets up to a pointed silver headstock past the right shoulder
-  for(let i=0;i<7;i++){P(8+i,19-i+b,NK);P(9+i,19-i+b,i%2?SI:'#8a5a32');}R(14,10+b,2,2,SI);P(15,9+b,SI);P(15,8+b,'#ffffff');P(13,10+b,SI);
-  // flame body with silver blade edge (lower-left)
-  const rows=[[16,3,4,0,0,0,0],[17,2,6,3,4,0,0],[18,1,8,2,6,3,4],[19,1,9,2,7,3,5],[20,1,9,2,7,3,6],[21,2,8,3,6,4,5],[22,2,6,3,4,0,0],[23,3,5,0,0,0,0]];
-  for(const [y,a1,a2,o1,o2,y1,y2] of rows){R(a1,y+b,a2-a1+1,1,GU);if(o2)R(o1,y+b,o2-o1+1,1,GO);if(y2)R(y1,y+b,y2-y1+1,1,GY);}
-  for(const [x,y] of [[2,15],[1,16],[0,17],[0,18],[0,19],[0,20],[0,21],[1,22],[1,23],[2,24],[0,24]])P(x,y+b,SI);P(6,21+b,'#2a2a30');P(7,21+b,'#2a2a30');R(5,19+b,2,1,SI);
-  R(12,13+b,2,2,SKL);P(14,12+b,SKL); // fretting hand on neck
-  const hy=f?20:18;R(7,hy+b,2,2,SKL);P(9,hy+b+1,SK); // strumming hand moves
-  // dark scarf
-  R(3,10+b,10,2,SC);R(4,10+b,8,1,SC2);
-  // white mask with outward horns + crest spike, dark visor, glowing green eyes
-  R(4,3+b,8,7,W);R(5,2+b,6,1,W);R(4,8+b,8,2,WS);R(4,3+b,1,6,WS);
-  P(3,3+b,W);P(2,2+b,W);P(2,1+b,W);P(1,0+b,W);P(3,2+b,WS);
-  P(12,3+b,WS);P(13,2+b,W);P(13,1+b,W);P(14,0+b,W);P(12,2+b,W);
-  R(7,0+b,2,2,W);P(8,1+b,WS);
-  R(5,5+b,6,2,V);P(6,5+b,GR);P(9,5+b,GR);P(5,5+b,GL);P(10,5+b,GL);P(6,6+b,GR);P(9,6+b,GR);R(7,8+b,2,1,V);
- },'#14101a');}
+  txt(dlg.name,x+88,y+26,{s:15,c:'#8a2e1e'});lines.forEach((l,i)=>txt(l,x+88,y+48+i*17,{s:13}));
+  dlg.rects=[];const n=dlg.choices.length,gap=6,bw=Math.min(150,(w-24-gap*(n-1))/n),bx0=x+w-12-(bw*n+gap*(n-1)),by=y+h-38;
+  dlg.choices.forEach((c,i)=>{const bx=bx0+i*(bw+gap);dlg.rects.push([bx,by,bw,28]);ctx.fillStyle='#2b1a0e';ctx.fillRect(bx,by,bw,28);
+    ctx.fillStyle=i==dlg.sel?'#d8443a':'#8a5530';ctx.fillRect(bx+2,by+2,bw-4,24);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(bx+2,by+2,bw-4,2);
+    txt(c[0],bx+bw/2,by+19,{s:bw<110?11:13,c:'#fff3d6',a:'center'});});}
+// Rzel sprite: front (idle peace sign / walking), back, side (left mirrors right)
+const RC={SK:'#c8834c',SKD:'#94552c',SKL:'#eaa872',SCR:'#f0c49a',H:'#c9cdd5',HD:'#8e949e',HL:'#f2f4f7',V:'#252a33',RE:'#ff3838',CR:'#3fc8a6',
+  A:'#3a3f4a',AD:'#262a32',AL:'#646b78',T:'#38d0c0',PU:'#c26bff',GO:'#f0c43a',GOD:'#a87c1c'};
+function rzFront(P,R,b,arm,leg){const {SK,SKD,SKL,SCR,H,HD,HL,V,RE,CR,A,AD,AL,T,PU,GO,GOD}=RC;const l1=leg==1?1:0,l2=leg==2?1:0;
+  R(3,23,4,7-l1,SK);R(3,23,1,7-l1,SKD);R(5,24,1,4,SKL);R(2,30-l1,5,2,SK);R(2,31-l1,5,1,SKD);P(4,26,H);P(5,26,HL);P(4,28,SCR);
+  R(9,23,4,7-l2,A);R(12,23,1,7-l2,AD);R(9,25,4,2,AL);P(10,25,HL);P(11,28-l2,PU);R(9,29-l2,4,1,T);R(9,30-l2,5,2,AD);R(10,30-l2,3,1,A);
+  R(3,20,10,1,'#3f8fe0');R(3,21,10,1,'#5aa8f0');R(4,22,8,1,'#f06aa8');R(5,23,6,1,'#f8904a');P(7,21,'#ffffff');P(8,21,'#ffffff');
+  R(3,11+b,5,9-b,SK);R(8,11+b,5,9-b,A);R(8,11+b,1,9-b,AD);R(9,12+b,3,2,AL);R(10,15+b,2,1,T);R(9,17+b,3,1,AL);P(12,18,T);
+  R(4,12+b,3,1,SKL);R(3,14+b,4,1,SKD);for(const yy of [15,17])if(yy+b<20){R(4,yy+b,3,1,SKL);R(3,yy+1+b,4,1,SKD);}P(6,13+b,SCR);P(5,16+b,SCR);P(4,18,SCR);
+  const sw=leg==1?1:leg==2?-1:0;
+  R(12,10+b,4,4,A);R(12,10+b,4,1,AL);R(13,11+b,2,1,T);R(13,14+b,3,7,A);R(15,14+b,1,7,AD);P(14,16+b,PU);R(13,19+b,3,1,AL);R(13,21+b+sw,3,2,AD);P(13,22+b+sw,T);P(15,22+b+sw,T);
+  R(1,11+b,3,3,SK);R(1,11+b,3,1,SKL);P(1,13+b,SCR);
+  if(arm=='down'){R(0,12+b,2,8,SK);R(0,12+b,1,8,SKD);R(0,18+b-sw,3,1,GO);R(0,19+b-sw,2,2,SK);}
+  else{const hy=arm=='high'?4:6;R(0,12+b,1,4,SK);R(0,hy+4,2,8-hy+b,SK);R(0,hy+4,3,1,GO);P(1,hy+4,GOD);R(0,hy+1,3,3,SK);R(0,hy+3,3,1,SKD);P(0,hy-1,SK);P(0,hy,SK);P(2,hy-1,SK);P(2,hy,SK);}
+  R(6,10+b,4,1,SK);P(5,11+b,GO);P(10,11+b,GO);P(6,12+b,GO);P(9,12+b,GO);R(7,13+b,2,2,GO);P(8,14+b,GOD);
+  R(13,1+b,1,3,CR);P(14,2+b,CR);P(12,0+b,CR);
+  R(4,2+b,8,8,H);R(5,1+b,6,1,H);R(4,2+b,1,7,HD);R(11,2+b,1,7,HD);R(6,2+b,4,1,HL);P(7,3+b,HD);P(8,3+b,HD);
+  P(4,1+b,H);P(3,0+b,HL);P(11,1+b,H);P(12,0+b,HL);
+  R(5,5+b,6,1,V);P(6,5+b,RE);P(9,5+b,RE);R(5,7+b,6,3,V);R(6,8+b,4,1,'#e0405a');P(5,7+b,HD);P(10,7+b,HD);}
+function rzBack(P,R,leg){const {SK,SKD,SKL,H,HD,HL,CR,A,AD,AL,T,PU,GO}=RC;const l1=leg==1?1:0,l2=leg==2?1:0;
+  R(3,23,4,7-l1,A);R(3,23,1,7-l1,AD);R(3,25,4,2,AL);P(4,28-l1,PU);R(2,30-l1,5,2,AD);R(9,23,4,7-l2,SK);R(12,23,1,7-l2,SKD);R(9,30-l2,5,2,SK);
+  R(3,20,10,2,'#4a9ae8');R(4,22,8,1,'#f06aa8');R(5,23,6,1,'#f8904a');
+  R(3,11,5,9,A);R(3,11,1,9,AD);R(4,13,3,1,T);R(4,16,3,1,AL);R(8,11,5,9,SK);R(12,11,1,9,SKD);R(9,13,3,1,SKD);R(8,16,1,4,SKD);R(9,12,3,1,SKL);
+  R(0,10,4,4,A);R(0,10,4,1,AL);R(0,14,3,8,A);R(0,14,1,8,AD);P(1,16,PU);R(0,21,3,2,AD);
+  R(12,11,3,3,SK);R(13,14,2,6,SK);R(15,14,1,6,SKD);R(13,18,3,1,GO);R(13,19,2,2,SK);
+  R(4,1,8,9,H);R(5,0,6,1,H);R(4,1,1,9,HD);R(11,1,1,9,HD);R(6,2,4,1,HL);R(7,0,2,6,CR);P(7,0,HL);P(3,0,HL);P(12,0,HL);R(5,9,6,1,HD);P(5,10,GO);P(10,10,GO);}
+function rzSide(P,R,leg){const {SK,SKD,SKL,SCR,H,HD,HL,V,RE,CR,A,AD,AL,T,PU,GO,GOD}=RC;const fl=leg==1?2:leg==2?-2:0;
+  if(fl==0){R(6,23,4,7,SK);R(6,23,1,7,SKD);R(6,30,6,2,SK);}else{R(7-fl/2,23,3,7,A);R(6-fl/2,30,5,2,AD);P(8-fl/2,27,PU);R(7+fl/2,23,3,7,SK);R(7+fl/2,30,5,2,SK);R(7+fl/2,31,5,1,SKD);}
+  R(5,20,6,2,'#4a9ae8');R(5,22,6,1,'#f06aa8');R(6,23,4,1,'#f8904a');
+  R(5,11,6,9,SK);R(5,11,1,9,SKD);R(9,12,2,2,SKL);R(8,15,3,1,SKD);R(8,17,3,1,SKD);P(7,14,SCR);R(4,10,2,3,A);P(4,10,AL);
+  const a=leg==1?1:leg==2?-1:0;R(7+a,12,3,6,SK);R(7+a,12,3,1,SKL);R(7+a,16,3,1,GO);R(7+a,17,3,2,SK);P(7+a,15,SCR);
+  P(11,11,GO);R(11,12,1,2,GO);P(12,13,GOD);
+  R(5,2,7,8,H);R(6,1,5,1,H);R(5,2,1,8,HD);R(7,2,3,1,HL);R(3,1,2,4,CR);P(4,0,CR);P(8,0,HL);P(9,1,H);
+  R(10,5,2,1,V);P(11,5,RE);R(9,7,3,3,V);R(10,8,2,1,'#e0405a');}
+function makeRzel(){for(let f=0;f<2;f++)spr('shopkeeper_'+f,16,32,(P,R)=>rzFront(P,R,f,f?'high':'low',0),'#14101a');
+  for(let f=0;f<3;f++){spr('rzel_down_'+f,16,32,(P,R)=>rzFront(P,R,0,'down',f),'#14101a');spr('rzel_up_'+f,16,32,(P,R)=>rzBack(P,R,f),'#14101a');
+    spr('rzel_right_'+f,16,32,(P,R)=>rzSide(P,R,f),'#14101a');spr('rzel_left_'+f,16,32,(P,R)=>rzSide((x,y,c)=>P(15-x,y,c),(x,y,w,h,c)=>R(16-x-w,y,w,h,c),f),'#14101a');}
+  spr('sign_out',20,14,(P,R)=>{R(0,0,20,11,'#8c5a36');R(1,1,18,9,'#efe0c0');R(3,3,14,1,'#b5452f');R(3,5,10,1,'#6b3a1a');R(3,7,12,1,'#6b3a1a');R(9,11,2,3,'#5a331a');},'#3b2414');}
 
 // ================= LOOP =================
 let last=performance.now();
