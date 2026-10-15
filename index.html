@@ -36,7 +36,7 @@ body.shop #top{display:none}}
 #cheatBadge.show{display:block}
 </style></head>
 <body><canvas id="c" width="960" height="640"></canvas>
-<div id="ver">v0.09</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="ver">v0.10</div><div id="cheatBadge">CHEATS ON</div><div id="cheat"></div><button id="ctlBtn" type="button">Controls</button>
 <div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:33.3%;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:33.3%">&#9664;</div><div class="tb" data-d="arrowright" style="left:66.6%;top:33.3%">&#9654;</div><div class="tb" data-d="arrowdown" style="left:33.3%;top:66.6%">&#9660;</div></div>
 <div id="act"><div class="row"><div class="tb" data-k="1">Hoe</div><div class="tb" data-k="2">Wtr</div><div class="tb" data-k="3">Seed</div><div class="tb" data-k="4">Hand</div></div>
 <div class="row"><div class="tb" data-k="q">Q&#8635;</div><div class="tb" id="bUse" data-k=" ">USE</div></div></div>
@@ -112,7 +112,7 @@ let G;
 function newGame(){ buildMap(); G={v:SAVE_V,day:1,time:6*60,gold:150,energy:100,maxE:100,
   p:{x:16*TS+8,y:16*TS+10,dir:'down'}, tool:0, soil:{}, pickups:[],
   inv:{radish_seed:5,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0}, seedSel:'radish',
-  weather:'sunny',rz:{mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'}}; startDay(); }
+  weather:'sunny',rz:{mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'},rzel:{pts:0,talkDay:0,giftDay:0}}; startDay(); }
 const game={msg(t){msgT=t;msgTime=3;}};
 let msgT='',msgTime=0,shopOpen=false,particles=[],walkDist=0,moving=false;
 function ev(){return EVENTS.find(e=>e.id==G.weather)||EVENTS[EVENTS.length-1];}
@@ -134,6 +134,7 @@ function migrate(s){
   s.inv=Object.assign({radish_seed:0,corn_seed:0,melon_seed:0,radish:0,corn:0,melon:0,chocolate:0},s.inv||{});
   if(!CROPS[s.seedSel])s.seedSel='radish';
   if(!s.rz||!isFinite(s.rz.x)||!['counter','follow','stay'].includes(s.rz.mode))s.rz={mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'};
+  s.rzel=Object.assign({pts:0,talkDay:0,giftDay:0},s.rzel||{});
   if(!s.v||s.v<3){const soil={};for(const k in s.soil){const [x,y]=k.split(',').map(Number);soil[(x+OX)+','+(y+OY)]=s.soil[k];}s.soil=soil;
     s.pickups=(s.pickups||[]).map(p=>({x:p.x+OX,y:p.y+OY,item:p.item}));
     if(s.p)s.p={x:s.p.x/2+OX*TS,y:s.p.y/2+OY*TS+2,dir:s.p.dir||'down'};}
@@ -533,6 +534,8 @@ function cheatAct(a){const p=a.split(':');
   else if(a=='h1')G.time=Math.min(G.time+60,26*60-1); else if(a=='t6')G.time=6*60; else if(a=='t18')G.time=18*60;
   else if(p[0]=='wx'){const e=EVENTS.find(e=>e.id==p[1]);G.weather=e.id;e.onDayStart&&e.onDayStart(game);initParticles();game.msg('Weather: '+e.name);}
   else if(p[0]=='tp'){tp(p[1]);rzTrail=[];}
+  else if(a=='heart'){addPts(100);game.msg('Rzel hearts: '+hearts()+'/5');}
+  else if(a=='hreset'){Object.assign(rzF(),{pts:0,talkDay:0,giftDay:0});game.msg('Rzel hearts reset.');}
   else if(a=='follow'){if(rzS().mode=='follow')rzSet('home');else{rzSet('follow');rzWarp();}game.msg('Rzel follow: '+(rzS().mode=='follow'?'ON':'OFF'));}
   else if(a=='reset'){if(confirm('Reset save? This deletes your progress.')){localStorage.removeItem('meadowbrook_save');newGame();snapCam();game.msg('Save reset - new game.');}}
   renderCheats();}
@@ -543,7 +546,7 @@ function renderCheats(){const B=(a,l)=>'<button data-a="'+a+'"'+(a.startsWith('t
   '<div class="sec">Farm</div>'+B('grow','Grow all')+B('water','Water all')+B('seeds','+10 seeds')+
   '<div class="sec">Time</div>'+B('sleep','Next day')+B('h1','+1h')+B('t6','6am')+B('t18','6pm')+
   '<div class="sec">Weather today</div>'+EVENTS.map(e=>B('wx:'+e.id,e.name)).join('')+
-  '<div class="sec">Rzel & movement</div>'+B('follow','Rzel follow')+B('tog:noclip','Noclip')+B('tog:speed','Speed x2')+
+  '<div class="sec">Rzel & movement</div>'+B('follow','Rzel follow')+B('heart','+1 heart')+B('hreset','Reset hearts')+B('tog:noclip','Noclip')+B('tog:speed','Speed x2')+
   '<div class="sec">Teleport</div>'+Object.keys(TELE).map(n=>B('tp:'+n,n[0].toUpperCase()+n.slice(1))).join('')+
   '<div class="sec">Danger</div>'+B('reset','Reset save');
   document.getElementById('cheatBadge').classList.toggle('show',Object.values(CHEAT).some(v=>v));}
@@ -556,16 +559,40 @@ document.getElementById('bDev').addEventListener('pointerdown',e=>{e.preventDefa
 const NPC={x:40,y:11,name:'Rzel'},HOME_X=NPC.x*TS+8,HOME_Y=NPC.y*TS+14;let dlg=null,rzTrail=[],rzStuck=0,rzMoving=false,rzWalk=0;
 function rzS(){if(!G.rz||!isFinite(G.rz.x))G.rz={mode:'counter',x:HOME_X,y:HOME_Y,dir:'down'};return G.rz;}
 function rzTile(){const r=rzS();return [Math.floor(r.x/TS),Math.floor((r.y-2)/TS)];}
-function greet(){return G.weather=='chocolate'?"Chocolate falling from the sky? Even the weather knows how to treat a customer.":G.weather=='rain'?"Rain? Good for the crops, good for business. What'll it be, farmer?":
-  ["Hey there, farmer! Peace! Need some seeds?","Name's Rzel. Best seeds in the valley - and that's a promise.","Looking strong today, farmer! Let's get you something to plant."][G.day%3];}
-function talkRzel(){const r=rzS();
-  if(r.mode=='counter')dlg={text:greet(),choices:[['Shop','shop'],['Follow me','follow'],['Bye','bye']]};
-  else if(r.mode=='follow')dlg={text:"Right behind you, farmer. Where to?",choices:[['Stay here','stay'],['Go back to shop','home'],['Bye','bye']]};
-  else dlg={text:"Holding my ground. Want me back on the road?",choices:[['Follow me','follow'],['Go back to shop','home'],['Bye','bye']]};
+// ---- Friendship: 100 pts per heart (0-5). Talk once/day +15. One gift/day: chocolate (favorite) +80, melon/corn (liked) +45, radish (neutral) +20.
+const RZ_LINES=[
+ ["Well, well. Look who wandered in - and here I thought the scenery was the only good-looking thing around.","Name's Rzel. Best seeds in the valley. Best smile too, but you didn't hear it from me.","Careful, farmer. Hang around here too long and I might start saving you the good seeds.","Is that dirt on your face, or are you just naturally down-to-earth?","You came all this way for seeds? Sure. Let's go with that.","Hey there, farmer! Need seeds, or did you just miss my face? Well, my mask."],
+ ["You've been tending crops all day, but you've been growing on me.","Are you a radish? Because you've got me turning a little red under this mask.","I'd say you're the cream of the crop, but that sounds too corny. ...Corn-y. Get it?","If you were a seed, I'd water you every single day. Rain or shine.","Every time that door swings open, I hope it's you. Today it is. Lucky me.","You must be fertilizer, because everything grows better when you're around."],
+ ["You know what my favorite season is? Whichever one you're in.","I counted my seed stock this morning. Lost track halfway, thinking about you.","Some folks see a farmer. I see the best part of my day walking through that door.","If love were a crop, I'd have a whole field of it with your name on the sign.","I don't need a harvest festival. You visiting is my celebration.","Stay a while? The shop can wait. Okay, the shop can't wait. But I wish it could."]];
+const RZ_WX={rain:["Rain? Good for the crops, good for business, better with you here.","Forget umbrellas - I'd hold this shop roof over your head any day."],
+  chocolate:["Chocolate falling from the sky? Still not as sweet as you, farmer.","Chocolate rain... the universe knows my favorite treat AND my favorite customer."]};
+const GIFT={chocolate:[80,'fav'],melon:[45,'like'],corn:[45,'like'],radish:[20,'ok']};
+const GIFT_LINES={fav:["CHOCOLATE? For me? You absolutely know the way to my heart.","Chocolate! Okay, you officially have my full attention. Forever."],
+  like:["A {x}! Grown by your hands? I'll treasure it.","Fresh {x}. Thoughtful AND good at farming? Unfair."],
+  ok:["A {x}. Simple, honest... kind of like you. Thanks, farmer.","A {x}? Hey, it's the thought that counts. And I'm thinking about you."]};
+function rzF(){if(!G.rzel)G.rzel={pts:0,talkDay:0,giftDay:0};return G.rzel;}
+function hearts(){return Math.min(5,Math.floor(rzF().pts/100));}
+function addPts(n){const f=rzF(),h=hearts();f.pts=Math.max(0,Math.min(500,f.pts+n));if(hearts()>h)game.msg('Rzel: '+hearts()+' \u2665');}
+function greet(){const f=rzF(),h=hearts(),k=G.day*5+Math.floor(G.time/90);
+  if(f.pts==0&&f.talkDay==0)return "New in town? Name's Rzel. I sell seeds, and I'm the best-looking part of this valley. Welcome!";
+  const wx=RZ_WX[G.weather];if(wx&&k%2==0)return wx[k%wx.length];
+  const t=RZ_LINES[h<=1?0:h<=3?1:2];return t[k%t.length];}
+function giftRzel(){const f=rzF();
+  if(f.giftDay==G.day)return "You already spoiled me today. Come back tomorrow, superstar.";
+  const have=Object.keys(GIFT).filter(k=>G.inv[k]>0).sort((a,b)=>GIFT[b][0]-GIFT[a][0]);
+  if(!have.length)return "Empty-handed? That's okay - your company is the best gift. (Bring a crop or chocolate!)";
+  const k=have[0],[pts,kind]=GIFT[k],nm=(CROPS[k]||ITEMS[k]).name.toLowerCase();G.inv[k]--;f.giftDay=G.day;addPts(pts);
+  const L=GIFT_LINES[kind];return L[G.day%L.length].replace('{x}',nm);}
+function talkRzel(){const r=rzS(),f=rzF();const text=r.mode=='counter'?greet():r.mode=='follow'?"Right behind you, farmer. Where to?":"Holding my ground. Want me back on the road?";
+  if(f.talkDay!=G.day){f.talkDay=G.day;addPts(15);}
+  const gift=['Gift','gift'];
+  if(r.mode=='counter')dlg={text,choices:[['Shop','shop'],gift,['Follow me','follow'],['Bye','bye']]};
+  else if(r.mode=='follow')dlg={text,choices:[['Stay here','stay'],gift,['Go back','home'],['Bye','bye']]};
+  else dlg={text,choices:[['Follow me','follow'],gift,['Go back','home'],['Bye','bye']]};
   dlg.name=NPC.name;dlg.sel=0;}
 function rzSet(m){const r=rzS();if(m=='home'){puff(Math.floor(r.x/TS),Math.floor(r.y/TS),'#c9cdd5',10);r.mode='counter';r.x=HOME_X;r.y=HOME_Y;r.dir='down';}
   else{r.mode=m;if(m=='follow')rzTrail=[];}}
-function choose(i){const c=dlg.choices[i],a=c[1];dlg=null;
+function choose(i){const c=dlg.choices[i],a=c[1];if(a=='gift'){dlg.text=giftRzel();dlg.choices=dlg.choices.filter(c=>c[1]!='gift');dlg.sel=0;return;}dlg=null;
   if(a=='shop')shopOpen=true;
   else if(a=='follow'){rzSet('follow');game.msg('Rzel: "Lead the way!"');}
   else if(a=='stay'){rzSet('stay');game.msg('Rzel: "I\'ll wait right here."');}
@@ -598,11 +625,12 @@ function drawRzel(objs,now){const r=rzS(),x=Math.round(r.x),y=Math.round(r.y);
     {const sp=SPR[k];drawS(k,x-Math.floor((sp?sp.width:RW)/2),y-(sp?sp.height:RH)+2);}}});
   if(r.mode!='counter')objs.push({y:12*TS+13,d:()=>drawS('sign_out',40*TS-2,12*TS-6)});}
 function wrapText(t,maxW){ctx.font='bold 13px monospace';const out=[];let line='';for(const w of t.split(' ')){const tr=line?line+' '+w:w;if(ctx.measureText(tr).width>maxW&&line){out.push(line);line=w;}else line=tr;}if(line)out.push(line);return out;}
+function drawHeart(x,y,on){const M=['.##.##.','#######','#######','.#####.','..###..','...#...'];M.forEach((r,j)=>{for(let i=0;i<7;i++)if(r[i]=='#'){ctx.fillStyle=on?'#e8344a':'#b99a78';ctx.fillRect(x+i*2,y+j*2,2,2);}});if(on){ctx.fillStyle='#ffc0c8';ctx.fillRect(x+2,y+2,2,2);}}
 function drawDialogue(){if(!dlg)return;const w=Math.min(560,cssW-16),lines=wrapText(dlg.text,w-100),h=Math.max(92,lines.length*17+40)+40,x=cssW/2-w/2,
   y=portraitTouch?cssH-h-8:Math.min(cssH-h-110,cssH*0.62);panel(x,y,w,h);
   ctx.fillStyle='#c99a62';ctx.fillRect(x+10,y+10,68,72);ctx.fillStyle='#3b2414';ctx.fillRect(x+10,y+10,68,1);ctx.fillRect(x+10,y+10,1,72);
   const s=SPR[ASSETS.shopkeeper?'shopkeeper':'shopkeeper_0'];if(s){const cw=Math.min(s.width,18),ch=cw*1.125;ctx.drawImage(s,Math.floor((s.width-cw)/2),0,cw,ch,x+12,y+12,64,72);}
-  txt(dlg.name,x+88,y+26,{s:15,c:'#8a2e1e'});lines.forEach((l,i)=>txt(l,x+88,y+48+i*17,{s:13}));
+  txt(dlg.name,x+88,y+26,{s:15,c:'#8a2e1e'});{ctx.font='bold 15px monospace';const hx=x+88+ctx.measureText(dlg.name).width+10,hh=hearts();for(let i=0;i<5;i++)drawHeart(hx+i*15,y+14,i<hh);}lines.forEach((l,i)=>txt(l,x+88,y+48+i*17,{s:13}));
   dlg.rects=[];const n=dlg.choices.length,gap=6,bw=Math.min(150,(w-24-gap*(n-1))/n),bx0=x+w-12-(bw*n+gap*(n-1)),by=y+h-38;
   dlg.choices.forEach((c,i)=>{const bx=bx0+i*(bw+gap);dlg.rects.push([bx,by,bw,28]);ctx.fillStyle='#2b1a0e';ctx.fillRect(bx,by,bw,28);
     ctx.fillStyle=i==dlg.sel?'#d8443a':'#8a5530';ctx.fillRect(bx+2,by+2,bw-4,24);ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(bx+2,by+2,bw-4,2);
@@ -663,11 +691,11 @@ function rzSide(P,R,o){const {S,A,H,V,RE,CR,T,PU,GO,GOD}=RC,lg=o.leg||0,fl=lg==1
 }
 // Head/mask pixel maps (12 wide, drawn at x=6). h/l/m/d = metal highlight/light/mid/dark, n = navy guard, r = red, g = red glow, c/C = crest
 const RZ_HEAD={
- front:["h..........d","hl........md",".hl.hhll.md.",".lhhhllllmdc",".lhhdlldmmdc",".lhllddlmmdc",".ldndlldndmC","lmnrrllrrnmd","lmnngllgnnmd",".mnnnnnnnnd.","..mrnnnnrd..","...nrnnrn...","....nrrn....",".....nn....."],
- back:["h....cc....d","hl...cc...md",".hl.hcCl.md.",".lhhlcClmmd.",".lhhlcCmmmd.",".lhllcCmmmd.",".lhllcCmmmd.","lmllmcCmmmmd","lmlmmcCmmmmd",".mmmmcCmmdd.","..mmmmmmmd..","...dddddd...","",""],
- side:["...h........","...hl.......","....hl......","c..hhllll...","cclhllllllm.","cclhlllllmmd",".clmllllnrrd",".clmlllllmmd","..lmmlllnnnd","..mmmmnnnnnn","...mmnnrrrnn","....dnnnnnnn",".......nnnn.","..........n."]};
+ front:["hh..........dd","hhl........mdd",".hl........md.",".hlhhhhhhmmmdc","..hllnllnmmdc.","..hlllnnmmmdc.","..hllnllnmmdC.",".hhhhhllmmmmd.",".lnrrnlmnrrnd.","..lnnglmgnnd..","..lmnnnnnnmd..","...mrnnnnrd...","....nrnnrn....",".....nrrn.....","......nn......"],
+ back:["hh....cc....dd","hhl...cC...mdd",".hl...cC...md.",".hlhhhcCmmmmd.","..hlllcCmmmd..","..hlllcCmmmd..","..hlllcCmmmd..",".hhlllcCmmmdd.","..hlllcCmmmd..","..hlllcCmmmd..","..lllmcCmmmd..","...lmmmmmmd...","....mmmmmd....",".....dddd....."],
+ side:["h.............","hh............",".hhl..........","c.hhlhhhhh....","cc.hlllllmm...","cclhllllllmd..",".clhlllllhhhd.",".clmllllnrrgd.","..lmmlllmmmd..","..lmmmmnnnnnd.","...mmmnnrrrnn.","....mnnnnnnnnn","......nnnnnn..","........nn...."]};
 function rzHead(P,view,b){const H=RC.H,col={h:H[3],l:H[2],m:H[1],d:H[0],n:'#1e2440',r:'#ff3b3b',g:'#ffb4a4',c:RC.CR,C:RC.CRD};
-  RZ_HEAD[view].forEach((row,y)=>{for(let x=0;x<row.length;x++){const c=col[row[x]];if(c)P(6+x,y+b,c);}});}
+  RZ_HEAD[view].forEach((row,y)=>{for(let x=0;x<row.length;x++){const c=col[row[x]];if(c)P(5+x,y+b,c);}});}
 function makeRzel(){const out=RC.O,sh=(P,R)=>[(x,y,c)=>P(x,y+2,c),(x,y,w,h,c)=>R(x,y+2,w,h,c)];
   const mk=(key,body,view,b,flip)=>spr(key,RW,RH,(P0,R0)=>{let P=P0,R=R0;if(flip){P=(x,y,c)=>P0(RW-1-x,y,c);R=(x,y,w,h,c)=>R0(RW-x-w,y,w,h,c);}const [p,r]=sh(P,R);body(p,r);rzHead(P,view,b||0);},out);
   for(let f=0;f<2;f++)mk('shopkeeper_'+f,(P,R)=>rzBody(P,R,{view:'front',b:f,arm:'down'}),'front',f);
