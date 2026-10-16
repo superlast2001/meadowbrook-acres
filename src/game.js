@@ -1,5 +1,5 @@
 // ===== NEON BARN (Meadowbrook Acres v0.0.0.33) =====
-const VERSION='v0.0.0.37',SAVE_KEY='neonbarn_save_v1',TS=16;
+const VERSION='v0.0.0.38',SAVE_KEY='neonbarn_save_v1',TS=16;
 const SPR={};const cv=document.getElementById('c'),X=cv.getContext('2d');
 let G=null,AREA=null,cam={x:0,y:0},K=3,DPR=1,cssW=800,cssH=600,canH=600,TOUCH=false;
 const keys={};let UI=null; // open modal name
@@ -134,7 +134,7 @@ const AREAS={
   exits:[{r:[220,314,60,10],to:'plaza',at:[770,762],label:'Leave (tram to plaza)'}],acts:[{r:[36,66,56,72],a:'bed',label:'Bed (sleep)'},{r:[12,196,38,48],a:'tram',label:'Tram app'}]}};
 function bg(id){const n=id=='club'?(G.club.open?1:0):(isNight()?1:0),k=id+n;if(!BAKE[k]){sd=777;BAKE[k]=AREAS[id].bake(!!n);}return BAKE[k];}
 let fade=0,fadeTo=null;
-function enterArea(id,x,y,instant){const go=()=>{G.area=id;AREA=AREAS[id];G.p.x=x;G.p.y=y;snapCam();onEnter(id);};if(instant){go();return;}fade=0.01;fadeTo=go;}
+function enterArea(id,x,y,instant){const go=()=>{G.area=id;AREA=AREAS[id];if(typeof resize=='function')resize();G.p.x=x;G.p.y=y;snapCam();onEnter(id);};if(instant){go();return;}fade=0.01;fadeTo=go;}
 function onEnter(id){if(id=='club'&&G.club.open)msg('The Neon Barn is OPEN!');if(id=='market'&&!isNight()&&Math.random()<.6)say('rzel',rpick(["Hey boss! Shopping for the Barn?","Fresh neon in stock. And me. I'm also here."]),3);}
 // ---------- collision ----------
 function solidAt(x,y){if(CHEAT.noclip)return x<2||y<6||x>AREA.w-2||y>AREA.h;if(x<4||x>AREA.w-4||y<8||y>AREA.h-2){return !AREA.exits.some(e=>hit(e.r,x,y));}
@@ -203,7 +203,7 @@ function nearNPC(){for(const id in ACT){const a=ACT[id];if(a.area!=G.area)contin
 function nearAct(){const [fx,fy]=front();for(const a of AREA.acts)if(hit(a.r,fx,fy)||hit(a.r,G.p.x,G.p.y-4))return a;
  if(G.area=='plaza'&&hit([590,280,100,40],G.p.x,G.p.y)&&!G.club.open&&G.time>=1200)return {a:'open',label:'Open the club!'};return null;}
 function prompt(){if(BUILD)return 'BUILD MODE';const n=nearNPC();if(n)return 'Talk to '+NPCDEF[n].name;const a=nearAct();if(a)return a.label;for(const e of AREA.exits)if(e.label&&Math.hypot(G.p.x-(e.r[0]+e.r[2]/2),G.p.y-(e.r[1]+e.r[3]/2))<40)return e.label;return null;}
-function use(){if(UI)return;if(BUILD){buildAct('place');return;}const n=nearNPC();if(n){openTalk(n);return;}const a=nearAct();if(!a)return;const k=a.a;
+function use(){if(UI)return;if(BUILD){buildAct('place');return;}const n=nearNPC();if(n){openTalk(n);return;}const a=nearAct();if(!a)return;const k=a.a;if(a.msg){msg(a.msg);return;}
  if(k=='tram')openPanel('tram');else if(k=='bed'){if(G.club.open){msg('The club is still open! Close it first (office or wait for 4 AM).');return;}openPanel('confirm',{q:'Sleep until tomorrow?',yes:()=>sleep()});}
  else if(k=='office')openPanel('office');else if(k=='open')openClub();else if(k=='rzelshop')openPanel('shop',{kind:'rzel'});else if(k=='supply')openPanel('shop',{kind:'supply'});else if(k=='hire')openPanel('hire');
  else if(k=='craft')openPanel('craft');else if(k.startsWith('bin:')){const i=+k.slice(4);if(G.bins.day!=G.day){G.bins={day:G.day,taken:[]};}if(G.bins.taken.includes(i)){msg('Already searched today.');return;}G.bins.taken.push(i);const r=Math.random();const it=r<0.55?'scrap':r<0.85?'ore':'drink';const n=it=='scrap'?rint(1,3):1;G.inv[it]+=n;msg('Found '+n+' '+ITEMS[it].name+'!');}
@@ -257,7 +257,7 @@ function render(){const now=performance.now();X.setTransform(1,0,0,1,0,0);X.imag
  X.font='bold 8px monospace';for(const p of POPS)if(p.area==G.area){X.fillStyle='#000';X.fillText(p.txt,p.x-6+.5,p.y-(1.2-p.t)*14+.5);X.fillStyle='#ffe14f';X.fillText(p.txt,p.x-6,p.y-(1.2-p.t)*14);}
  X.setTransform(DPR,0,0,DPR,0,0);
  for(const id in bubbles){const a=ACT[id];if(!a||a.area!=G.area)continue;const sx=(a.x-cx)*K/DPR,sy=(a.y-NPCDEF[id].h-4-cy)*K/DPR;bubbleUI(sx,sy,bubbles[id].t);}
- drawHUD();if(fade){X.fillStyle='rgba(0,0,0,'+Math.min(1,Math.abs(fade))+')';X.fillRect(0,0,cssW,canH);}}
+ drawTags(cx,cy);drawHUD();if(fade){X.fillStyle='rgba(0,0,0,'+Math.min(1,Math.abs(fade))+')';X.fillRect(0,0,cssW,canH);}}
 function bubbleUI(sx,sy,t){X.font='bold 12px monospace';const lines=[];let l='';for(const w of t.split(' ')){const tr=l?l+' '+w:w;if(X.measureText(tr).width>170&&l){lines.push(l);l=w;}else l=tr;}lines.push(l);
  const bw=Math.max(...lines.map(s=>X.measureText(s).width))+12,bh=lines.length*14+8;const bx=clamp(sx-bw/2,4,cssW-bw-4),by=Math.max(70,sy-bh-6);X.fillStyle='#2b1a0e';X.fillRect(bx-2,by-2,bw+4,bh+4);X.fillStyle='#fff8e8';X.fillRect(bx,by,bw,bh);X.fillStyle='#3b2414';lines.forEach((s,i)=>X.fillText(s,bx+6,by+15+i*14));}
 function panelBox(x,y,w,h){X.fillStyle='#2b1a0e';X.fillRect(x,y,w,h);X.fillStyle='#8a5530';X.fillRect(x+2,y+2,w-4,h-4);X.fillStyle='#f2d8a0';X.fillRect(x+4,y+4,w-8,h-8);}
@@ -365,7 +365,7 @@ function bindTouch(){document.querySelectorAll('[data-d]').forEach(el=>{const k=
 function resize(){DPR=Math.min(3,window.devicePixelRatio||1);cssW=innerWidth;cssH=innerHeight;TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0;document.body.classList.toggle('touch',TOUCH);
  const portrait=cssH>cssW;canH=(TOUCH&&portrait&&!document.body.classList.contains('hidectl'))?Math.round(cssH-150):cssH;document.documentElement.style.setProperty('--ch',canH+'px');
  cv.style.width=cssW+'px';cv.style.height=canH+'px';cv.width=Math.round(cssW*DPR);cv.height=Math.round(canH*DPR);
- K=(TOUCH&&portrait)?Math.max(2,Math.round(cv.width/196)):Math.max(2,Math.round(3*DPR*Math.min(1,Math.max(cssW/900,0.67))));if(AREA)snapCam();}
+ K=(TOUCH&&portrait)?Math.max(2,Math.round(cv.width/(AREA&&(G.area=='club'||G.area=='home')?250:196))):Math.max(2,Math.round(3*DPR*Math.min(1,Math.max(cssW/900,0.67))));if(AREA)snapCam();}
 addEventListener('resize',resize);
 // ---------- boot ----------
 let last=performance.now();
