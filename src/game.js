@@ -1,5 +1,5 @@
 // ===== NEON BARN (Meadowbrook Acres v0.0.0.33) =====
-const VERSION='v0.0.0.35',SAVE_KEY='neonbarn_save_v1',TS=16;
+const VERSION='v0.0.0.36',SAVE_KEY='neonbarn_save_v1',TS=16;
 const SPR={};const cv=document.getElementById('c'),X=cv.getContext('2d');
 let G=null,AREA=null,cam={x:0,y:0},K=3,DPR=1,cssW=800,cssH=600,canH=600,TOUCH=false;
 const keys={};let UI=null; // open modal name
@@ -275,10 +275,10 @@ function drawHUD(){const sm=cssW<500;const f=sm?'bold 12px monospace':'bold 14px
 const $=id=>document.getElementById(id);let dlgOpen=false;
 function closeUI(){UI=null;$('panel').classList.remove('show');document.body.classList.remove('shop');}
 function openTalk(id){const R=relOf(id);let t;if(R.talkDay!=G.day){R.talkDay=G.day;addRel(id,20);}t=talkLine(id);dialog(id,t,heartsOf(id)>=6?'blush':'happy',true);}
-function dialog(id,t,mood,choices){dlgOpen=true;const p=portraitOf(id,mood);const d=$('dlg');let img='';if(p&&ASSETS[p])img='<img src="'+ASSETS[p]+'">';else{img='<img src="'+bustCanvas(LOOKS[id],240).toDataURL()+'">';}
+function dialogOld(id,t,mood,choices){dlgOpen=true;const p=portraitOf(id,mood);const d=$('dlg');let img='';if(p&&ASSETS[p])img='<img src="'+ASSETS[p]+'">';else{img='<img src="'+bustCanvas(LOOKS[id],240).toDataURL()+'">';}
  d.innerHTML='<div class="pt">'+img+'<b>'+NPCDEF[id].name+'</b><span class="hs">'+'\u2665'.repeat(heartsOf(id))+'<i>'+'\u2665'.repeat(Math.max(0,heartCap(id)-heartsOf(id)))+'</i></span></div><div class="tx">'+t+'</div><div class="ch">'+(choices?'<button data-g="talk">Talk</button><button data-g="gift">Gift</button>'+(id=='rzel'&&!isNight()?'<button data-g="shop">Shop</button>':'')+(G.staff.find(s=>s.npc==id)?'':'<button data-g="hire">Hire?</button>'):'')+'<button data-g="bye">Bye</button></div>';
  d.classList.add('show');d.dataset.id=id;}
-function closeDlg(){dlgOpen=false;$('dlg').classList.remove('show');}
+function closeDlg(){dlgOpen=false;$('dlg').classList.remove('show');if(window.vnClose)vnClose();}
 $('dlg').addEventListener('click',e=>{const g=e.target.dataset.g;if(!g)return;const id=$('dlg').dataset.id;
  if(g=='bye')closeDlg();else if(g=='talk')dialog(id,talkLine(id),'happy',true);else if(g=='shop'){closeDlg();openPanel('shop',{kind:'rzel'});}else if(g=='hire'){closeDlg();openPanel('hire');}
  else if(g=='gift'){const its=Object.keys(ITEMS).filter(k=>G.inv[k]>0);if(!its.length){dialog(id,"Empty-handed? That's okay. Your company is the gift.",'happy',true);return;}
