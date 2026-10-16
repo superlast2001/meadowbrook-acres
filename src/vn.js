@@ -11,9 +11,9 @@ const MALE_L={
   chest:[["Pfft, haha! Ticklish! Stop!","Hey, no poking the DJ mid-set!"],["You're such a dork. I love it."],["Ha... you always make me laugh."]],
   back:[["Back pat? Thanks, partner!","Yeah! Good set, right?"],["Teamwork makes the dream work."],["You've got my back. I've got yours."]]}};
 const VNDEF={
- ares:{img:'ares',male:1,h:'min(64vh,calc(100vh - 120px))',aspect:640/793,head:[.62,.15],
-  zones:[['head',.48,.02,.76,.27],['shoulder',.22,.24,.40,.33],['shoulder',.62,.26,.80,.36],['arm',0,.13,.22,.58],['arm',.80,.20,1,.58],['chest',.30,.33,.70,.50],['back',.20,.50,.32,.62],['back',.70,.50,.82,.62]],
-  blush:[[.585,.20],[.71,.175]],react:{head:['happy','bounce'],shoulder:['smug','hop'],arm:['smug','flex'],chest:['happy','flex'],back:['happy','bounce']}},
+ ares:{img:'ares',male:1,px:1,h:'min(72vh,calc(100vh - 110px))',aspect:284/486,head:[.58,.07],
+  zones:[['head',.42,0,.78,.17],['shoulder',.2,.15,.42,.24],['shoulder',.62,.17,.86,.26],['arm',0,.06,.2,.36],['arm',.8,.25,1,.55],['chest',.35,.2,.72,.36],['back',.22,.3,.34,.42],['back',.72,.3,.84,.42]],
+  blush:[[.5,.08],[.66,.07]],react:{head:['happy','bounce'],shoulder:['smug','hop'],arm:['smug','flex'],chest:['happy','flex'],back:['happy','bounce']}},
  rzel:{img:'rzel',male:1,px:1,h:'min(70vh,calc(100vh - 110px))',aspect:48/96,head:[.47,.09],
   zones:[['head',.22,0,.75,.2],['shoulder',.12,.2,.35,.29],['shoulder',.6,.2,.88,.3],['arm',0,.29,.2,.62],['arm',.78,.3,1,.66],['chest',.3,.22,.68,.38],['back',.2,.38,.3,.48],['back',.68,.38,.78,.48]],
   blush:[[.36,.13],[.6,.13]],react:{head:['happy','bounce'],shoulder:['blush','hop'],arm:['smug','flex'],chest:['happy','hop'],back:['happy','bounce']}},
