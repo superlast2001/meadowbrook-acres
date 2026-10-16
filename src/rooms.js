@@ -94,7 +94,8 @@ function drawTags(cx,cy){X.setTransform(DPR,0,0,DPR,0,0);X.textBaseline='middle'
  X.textAlign='left';X.textBaseline='alphabetic';}
 function rrX(x,y,w,h,r){X.beginPath();X.moveTo(x+r,y);X.arcTo(x+w,y,x+w,y+h,r);X.arcTo(x+w,y+h,x,y+h,r);X.arcTo(x,y+h,x,y,r);X.arcTo(x,y,x+w,y,r);X.closePath();}
 function totalHearts(){let n=0;for(const id in NPCDEF)n+=heartsOf(id);return n;}
-function drawHUD(){const sm=cssW<500;
+function topM(){if(!window._sai){const d=document.createElement('div');d.style.cssText='position:fixed;top:0;height:env(safe-area-inset-top,0px);width:1px;visibility:hidden';document.body.appendChild(d);window._sai=d;}const e=window._sai.offsetHeight||0;const v=Math.max(e,TOUCH&&cssH>cssW?28:0);document.documentElement.style.setProperty('--tm',v+'px');return v;}
+function drawHUD(){const sm=cssW<500;const TM=topM();X.save();X.translate(0,TM);
  // top-left: time bar + money/heart counter (reference style)
  const x=6,y=6,w=sm?150:176;X.fillStyle='rgba(0,0,0,.75)';rrX(x,y,w,46,6);X.fill();X.strokeStyle='#ffe14f';X.lineWidth=1.5;X.stroke();
  X.font='bold 9px "Trebuchet MS",sans-serif';X.fillStyle='#ffe14f';X.fillText(((isNight()?'NIGHT ':'DAY ')+G.day+'  \u2022  '+fmtT(G.time)).toUpperCase(),x+8,y+12);
@@ -107,12 +108,12 @@ function drawHUD(){const sm=cssW<500;
  if(G.club.open&&G.night){const N=G.night,inc=N.inc.door+N.inc.bar+N.inc.dance+N.inc.vip;const w2=sm?150:190,x2=cssW-w2-6,y2=sm?76:70;X.fillStyle='rgba(0,0,0,.75)';rrX(x2,y2,w2,60,6);X.fill();X.strokeStyle='#ff4fd0';X.stroke();X.font='bold 11px monospace';X.fillStyle='#fff';
   X.fillText('OPEN  in:'+GUESTS.length+' queue:'+QUEUE,x2+8,y2+15);X.fillText('Hype',x2+8,y2+30);X.fillStyle='#3a2a5a';X.fillRect(x2+44,y2+23,w2-56,7);X.fillStyle='#ff4fd0';X.fillRect(x2+44,y2+23,(w2-56)*N.hype/100,7);
   X.fillStyle='#fff';X.fillText('Clean',x2+8,y2+44);X.fillStyle='#3a2a5a';X.fillRect(x2+44,y2+37,w2-56,7);X.fillStyle='#4fd060';X.fillRect(x2+44,y2+37,(w2-56)*G.club.clean/100,7);X.fillStyle='#fff';X.fillText('Tonight +'+inc+'g',x2+8,y2+56);}
- const n=nearNPC();const tb=$('talkBtn');if(tb){const show=!!n&&!UI&&!dlgOpen;tb.classList.toggle('show',show);if(show)tb.dataset.n=NPCDEF[n].name;}
+ X.restore();const n=nearNPC();const tb=$('talkBtn');if(tb){const show=!!n&&!UI&&!dlgOpen;tb.classList.toggle('show',show);if(show)tb.dataset.n=NPCDEF[n].name;}
  const pr=n?null:prompt();if(pr&&!UI){X.font='bold 13px "Trebuchet MS",sans-serif';const t=(TOUCH?'USE: ':'E: ')+pr,tw=X.measureText(t).width+20;X.fillStyle='rgba(0,0,0,.72)';rrX(cssW/2-tw/2,canH-40,tw,28,14);X.fill();X.strokeStyle='#ffe14f';X.stroke();X.fillStyle='#fff';X.fillText(t,cssW/2-tw/2+10,canH-21);}
- X.font='bold 12px monospace';MSG.forEach(m=>{m.d-=1/60;});MSG=MSG.filter(m=>m.d>0);MSG.forEach((m,i)=>{const tw=Math.min(cssW-12,X.measureText(m.t).width+14),yy=canH-76-(MSG.length-1-i)*24;X.globalAlpha=Math.min(1,m.d*2);X.fillStyle='rgba(20,16,30,.85)';X.fillRect(6,yy,tw,20);X.fillStyle='#ffe9b0';X.fillText(m.t,13,yy+14);X.globalAlpha=1;});}
+ X.font='bold 12px monospace';MSG.forEach(m=>{m.d-=1/60;});MSG=MSG.filter(m=>m.d>0);let yy=canH-50;const maxw=cssW-24;for(let i=MSG.length-1;i>=0;i--){const m=MSG[i];const lines=[];let l='';for(const w of m.t.split(' ')){const t2=l?l+' '+w:w;if(X.measureText(t2).width>maxw&&l){lines.push(l);l=w;}else l=t2;}lines.push(l);const bh=lines.length*15+6;yy-=bh+4;const tw=Math.min(cssW-12,Math.max(...lines.map(q=>X.measureText(q).width))+14);X.globalAlpha=Math.min(1,m.d*2);X.fillStyle='rgba(20,16,30,.85)';X.fillRect(6,yy,tw,bh);X.fillStyle='#ffe9b0';lines.forEach((q,k)=>X.fillText(q,13,yy+15+k*15));X.globalAlpha=1;}}
 function lg2(x,w){const g=X.createLinearGradient(x,0,x+w,0);g.addColorStop(0,'#ffe14f');g.addColorStop(1,'#ff7a3d');return g;}
 (function(){const s=document.createElement('style');s.textContent=`
-#hudR{position:fixed;z-index:6;top:calc(6px + env(safe-area-inset-top));right:6px;display:flex;gap:4px}
+#hudR{position:fixed;z-index:6;top:calc(6px + var(--tm,0px));right:6px;display:flex;gap:4px}
 #noteBtn{height:34px;padding:0 14px 0 18px;font:900 15px "Trebuchet MS",sans-serif;letter-spacing:1px;color:#fff;background:linear-gradient(#3aa8f0,#1a6ac8);border:2px solid #0a2a5a;clip-path:polygon(10px 0,100% 0,100% 100%,0 100%);border-radius:0 4px 4px 0;text-shadow:0 1px 0 #0a2a5a}
 #gearBtn{width:34px;height:34px;font-size:20px;color:#fff;background:linear-gradient(#3aa8f0,#1a6ac8);border:2px solid #0a2a5a;border-radius:4px;padding:0;line-height:1}
 #talkBtn{display:none;position:fixed;z-index:6;right:10px;top:calc(var(--ch) - 64px);height:50px;min-width:120px;padding:0 18px;font:900 20px "Trebuchet MS",sans-serif;letter-spacing:1px;color:#fff;background:linear-gradient(#7af06a,#2aa83a);border:3px solid #0a4a14;border-radius:12px;box-shadow:0 4px 0 #0a4a14,0 0 14px rgba(120,255,120,.5);text-shadow:0 2px 0 #0a4a14;animation:tpulse 1s infinite alternate}

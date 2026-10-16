@@ -112,7 +112,7 @@ function vnClose(){clearInterval(VN.typing);VN.typing=0;VN.id=null;const d=$('dl
 #dlg.hid .vbox,#dlg.hid .ch{display:none}
 #dlg .vshow{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));font:800 14px "Trebuchet MS",sans-serif;color:#222;background:#fff;border:3px solid #3a3a44;border-radius:16px;padding:8px 18px}
 #dlg.hid .vshow{display:block}
-#dlg .vhint{display:none;position:absolute;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);font:700 12px sans-serif;color:#fff;background:rgba(0,0,0,.6);border-radius:10px;padding:4px 10px;white-space:nowrap}
+#dlg .vhint{display:none;position:absolute;left:50%;top:calc(10px + var(--tm,0px));transform:translateX(-50%);font:700 12px sans-serif;color:#fff;background:rgba(0,0,0,.6);border-radius:10px;padding:4px 10px;white-space:nowrap}
 #dlg.hid .vhint{display:block}
 #dlg .vname{position:absolute;top:-16px;left:14px;display:inline-flex;align-items:center;gap:8px;padding:4px 14px;border-radius:6px 6px 0 0;background:linear-gradient(#5a5a66,#34343e);border:2px solid #fff;border-bottom:0;z-index:2}
 #dlg .vname b{font:900 14px "Trebuchet MS",sans-serif;color:#fff;letter-spacing:1.5px;text-transform:uppercase}

@@ -1,5 +1,5 @@
 // ===== NEON BARN (Meadowbrook Acres v0.0.0.33) =====
-const VERSION='v0.0.0.38',SAVE_KEY='neonbarn_save_v1',TS=16;
+const VERSION='v0.0.0.39',SAVE_KEY='neonbarn_save_v1',TS=16;
 const SPR={};const cv=document.getElementById('c'),X=cv.getContext('2d');
 let G=null,AREA=null,cam={x:0,y:0},K=3,DPR=1,cssW=800,cssH=600,canH=600,TOUCH=false;
 const keys={};let UI=null; // open modal name
@@ -241,7 +241,7 @@ function update(dt){const now=performance.now();if(fade>0){fade+=dt*4;if(fade>=1
 // ---------- render ----------
 function drawPlayer(){ctx=X;human(G.p.x,G.p.y,LOOKS.farmer,G.p.dir,G.p.walk||0,G.p.moving);return;const s=SPR.farmer_sheet;ctx=X;shadow(G.p.x,G.p.y+1,5);const row={down:0,up:1,left:2,right:3}[G.p.dir],col=G.p.moving?[1,2,3,2][Math.floor(G.p.walk/5)%4]:0;X.drawImage(s,col*48,row*72,48,72,G.p.x-8,G.p.y-23,16,24);}
 function render(){const now=performance.now();X.setTransform(1,0,0,1,0,0);X.imageSmoothingEnabled=false;X.fillStyle='#0e0c1a';X.fillRect(0,0,cv.width,cv.height);
- const cx=Math.round(cam.x*K)/K,cy=Math.round(cam.y*K)/K;X.setTransform(K,0,0,K,-cx*K,-cy*K);X.imageSmoothingEnabled=false;X.imageSmoothingEnabled=true;X.drawImage(bg(G.area),0,0,AREA.w,AREA.h);X.imageSmoothingEnabled=false;ctx=X;
+ const cx=Math.round(cam.x*K)/K,cy=Math.round(cam.y*K)/K;X.setTransform(K,0,0,K,-cx*K,-cy*K);X.imageSmoothingEnabled=false;{const B=bg(G.area);if(B.pixel){X.fillStyle=AREA.outer||'#2a1a10';X.fillRect(cam.x-50,cam.y-50,cv.width/K+100,cv.height/K+100);}X.imageSmoothingEnabled=!B.pixel;X.drawImage(B,0,0,AREA.w,AREA.h);}X.imageSmoothingEnabled=false;ctx=X;
  const objs=[{y:G.p.y,d:drawPlayer}];
  for(const id in ACT){const a=ACT[id];if(a.area==G.area)objs.push({y:a.y,d:()=>drawNPC(id,a,now)});}
  const vx0=cam.x-20,vx1=cam.x+cv.width/K+20,vy0=cam.y-10,vy1=cam.y+cv.height/K+40;const inV=(x,y)=>x>vx0&&x<vx1&&y>vy0&&y<vy1;
@@ -365,11 +365,11 @@ function bindTouch(){document.querySelectorAll('[data-d]').forEach(el=>{const k=
 function resize(){DPR=Math.min(3,window.devicePixelRatio||1);cssW=innerWidth;cssH=innerHeight;TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0;document.body.classList.toggle('touch',TOUCH);
  const portrait=cssH>cssW;canH=(TOUCH&&portrait&&!document.body.classList.contains('hidectl'))?Math.round(cssH-150):cssH;document.documentElement.style.setProperty('--ch',canH+'px');
  cv.style.width=cssW+'px';cv.style.height=canH+'px';cv.width=Math.round(cssW*DPR);cv.height=Math.round(canH*DPR);
- K=(TOUCH&&portrait)?Math.max(2,Math.round(cv.width/(AREA&&(G.area=='club'||G.area=='home')?250:196))):Math.max(2,Math.round(3*DPR*Math.min(1,Math.max(cssW/900,0.67))));if(AREA)snapCam();}
+ K=(TOUCH&&portrait)?Math.max(2,Math.round(cv.width/196)):Math.max(2,Math.round(3*DPR*Math.min(1,Math.max(cssW/900,0.67))));if(AREA)snapCam();}
 addEventListener('resize',resize);
 // ---------- boot ----------
 let last=performance.now();
 function loop(t){const dt=Math.min(0.05,(t-last)/1000);last=t;try{update(dt);render();}catch(e){console.error(String(e&&e.stack||e));}requestAnimationFrame(loop);}
 window.NB={get G(){return G},closeDlg,use,openClub,endNight,payWages,sleep,openPanel,closeUI,enterArea,cheatAct,simNight,get GUESTS(){return GUESTS},get QUEUE(){return QUEUE},set QUEUE(v){QUEUE=v},renderPanel,get PD(){return PD},buildAct,get BUILD(){return BUILD},set BUILD(v){BUILD=v;renderBuildBar();},dialog,openTalk,update,render,snapCam,makePeds};
 let nl=0;const AK=Object.keys(ASSETS);for(const k of AK){const im=new Image();im.onload=()=>{SPR[k]=im;if(++nl==AK.length)boot();};im.src=ASSETS[k];}
-function boot(){$('ver').textContent=VERSION;bindTouch();resize();newGame();AREA=AREAS.home;if(localStorage.getItem(SAVE_KEY))load();else{enterArea('home',120,200,true);msg('Welcome to the Neon Barn, boss! Press M for menu / help.');}makePeds();snapCam();window.READY=true;requestAnimationFrame(loop);}
+function boot(){$('ver').textContent=VERSION;bindTouch();resize();newGame();AREA=AREAS.home;if(localStorage.getItem(SAVE_KEY))load();else{enterArea('home',120,200,true);msg(TOUCH?'Welcome to the Neon Barn, boss! Tap \u2630 for menu.':'Welcome to the Neon Barn, boss! Press M for menu / help.');}makePeds();snapCam();window.READY=true;requestAnimationFrame(loop);}
