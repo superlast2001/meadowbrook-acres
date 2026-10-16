@@ -8,9 +8,9 @@ const VNDEF={
    head:{m:'happy',a:'bounce',l:[["Hey! Hands off the hair, it took me nine seconds.","Pat me again and I start charging cover."],["Heh. Okay, that one I didn't hate.","You're lucky I like you."],["Keep that up and I'll actually smile on shift."]]},
    torso:{m:'surprised',a:'hop',l:[["Whoa, ticklish! Not a word to the regulars.","Personal space, boss. It's a bouncer thing."],["You poke like a rookie. Cute."],["Fine. You found my weak spot. It's you."]]},
    hand:{m:'blush',a:'bounce',l:[["High five? ...Okay. Nice.","Grip's not bad. Ever thought about door duty?"],["You want to hold the sword? Get in line."],["Hand's yours whenever you need it. Don't make it weird."]]}}},
- rzel:{img:'rzel',h:'min(66vh,calc(100vh - 120px))',aspect:600/960,head:[.5,.11],tint:'#38e8ff',
-  zones:[['hand',0,.42,.18,.62],['hand',.76,.44,.98,.66],['head',.3,0,.72,.22],['arm',0,.2,.3,.44],['arm',.66,.2,1,.46],['torso',.28,.2,.68,.7]],
-  blush:[[.4,.15],[.6,.15]],
+ rzel:{img:'rzel',px:1,h:'min(70vh,calc(100vh - 110px))',aspect:48/96,head:[.47,.09],tint:'#38e8ff',
+  zones:[['hand',0,.5,.16,.66],['hand',.78,.56,1,.7],['head',.22,0,.75,.22],['arm',0,.22,.28,.5],['arm',.68,.22,1,.55],['torso',.25,.2,.7,.7]],
+  blush:[[.36,.13],[.6,.13]],
   react:{
    arm:{m:'blush',a:'flex',l:[["Th-that's the chrome arm! It's sensitive to... compliments.","Hey! Careful, it's still under warranty."],["You like the arm? I tuned the servos myself."],["Okay, okay, I'll flex. Just for you. Don't tell the crowd."]]},
    head:{m:'smile',a:'bounce',l:[["Ha! Don't scuff the mask, it's vintage.","Did you just pat my helmet? Bold."],["Heh... that's kinda nice, actually."],["Keep doing that and I'll play your favourite song all night."]]},
@@ -33,7 +33,7 @@ function vnLayout(){const d=$('dlg');if(!d||!d.classList.contains('show'))return
 function dialog(id,t,mood,choices){dlgOpen=true;const d=vnEnsure();const def=VNDEF[id];const same=VN.id==id&&d.classList.contains('show');
  VN.id=id;VN.pages=vnPages(t);VN.pi=0;VN.choices=!!choices;VN.mood=vnMood(mood);d.dataset.id=id;
  const pw=d.querySelector('.vpw'),img=d.querySelector('.vp');
- if(def){img.src=VNART[def.img];pw.style.setProperty('--asp',def.aspect);pw.classList.remove('bust');pw.style.height=def.h||'';}
+ if(def){img.src=VNART[def.img];pw.style.setProperty('--asp',def.aspect);pw.classList.remove('bust');pw.style.height=def.h||'';img.style.imageRendering=def.px?'pixelated':'auto';}
  else{img.src=bustCanvas(LOOKS[id],512).toDataURL();pw.style.setProperty('--asp',1);pw.classList.add('bust');pw.style.height='';}
  d.querySelector('.vname b').textContent=NPCDEF[id].name;
  d.querySelector('.hs').innerHTML='\u2665'.repeat(heartsOf(id))+'<i>'+'\u2665'.repeat(Math.max(0,heartCap(id)-heartsOf(id)))+'</i>';
