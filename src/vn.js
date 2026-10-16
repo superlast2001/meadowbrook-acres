@@ -59,8 +59,8 @@ function vnAdvance(){if(VN.typing){vnFinish();return;}if(VN.pi<VN.pages.length-1
 function vnExpr(m){const d=$('dlg'),pi=d.querySelector('.vpi');pi.dataset.ex=m;const fx=d.querySelector('.vfx');const def=VNDEF[VN.id];
  fx.querySelectorAll('.ex').forEach(e=>e.remove());if(!def)return;
  const add=(cls,x,y,txt)=>{const e=document.createElement('div');e.className='ex '+cls;e.style.left=(x*100)+'%';e.style.top=(y*100)+'%';if(txt)e.textContent=txt;fx.appendChild(e);};
- if(m=='blush')def.blush.forEach(p=>add('bl',p[0],p[1]));
- if(m=='mad'){add('ang',def.head[0]+.2,def.head[1]-.02,'\u2716');add('ang2',def.head[0],def.head[1]);if(def.bust){const sk=(LOOKS[VN.id]||{}).skin||'#f2c8a0';const mp=document.createElement('div');mp.className='ex mpatch';mp.style.left='50%';mp.style.top='47.5%';mp.style.background=sk;fx.appendChild(mp);add('frown',.5,.485);add('brow l',.41,.34);add('brow r',.59,.34);}}
+ if(m=='blush'&&def.bust)def.blush.forEach(p=>add('bl',p[0],p[1]));
+ if(m=='mad'){add('ang',def.head[0]+.2,def.head[1]-.02,'\u2716');if(def.bust){add('ang2',def.head[0],def.head[1]);const sk=(LOOKS[VN.id]||{}).skin||'#f2c8a0';const mp=document.createElement('div');mp.className='ex mpatch';mp.style.left='50%';mp.style.top='47.5%';mp.style.background=sk;fx.appendChild(mp);add('frown',.5,.485);add('brow l',.41,.34);add('brow r',.59,.34);}}
  if(m=='happy'){add('spk',def.head[0]-.16,def.head[1]-.06,'\u2726');add('spk',def.head[0]+.16,def.head[1]+.02,'\u2727');}
  if(m=='surprised')add('sur',def.head[0]+.14,def.head[1]-.09,'!');
  if(m=='smug')add('spk',def.head[0]+.15,def.head[1]-.05,'\u266A');}
@@ -91,8 +91,6 @@ function vnClose(){clearInterval(VN.typing);VN.typing=0;VN.id=null;const d=$('dl
 #dlg .vpi{position:relative;height:100%;aspect-ratio:var(--asp);max-width:118vw;pointer-events:auto;transform-origin:50% 100%;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
 #dlg .vp{width:100%;height:100%;object-fit:contain;display:block;margin:0;border:0;box-shadow:none;background:none;border-radius:0;-webkit-user-drag:none;user-select:none}
 #dlg .vpw.in .vpi{animation:vnslide .45s cubic-bezier(.2,.9,.25,1.15)}
-#dlg .vpi[data-ex=mad] .vp{filter:saturate(1.3) sepia(.15) hue-rotate(-12deg) brightness(.95)}
-#dlg .vpi[data-ex=happy] .vp{filter:brightness(1.06)}
 #dlg .vfx{position:absolute;inset:0;pointer-events:none}
 #dlg .ex{position:absolute;transform:translate(-50%,-50%)}
 #dlg .ex.bl{width:9%;aspect-ratio:2/1;border-radius:50%;background:radial-gradient(ellipse,rgba(255,90,140,.75),rgba(255,90,140,0) 70%)}
