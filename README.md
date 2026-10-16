@@ -31,7 +31,7 @@ Press ` or F2 (desktop), tap the version label (e.g. "v0.09") 5 times quickly, o
 Rzel (silver horned helmet-mask, half cyber-armor) stands behind the shop counter with a 2-frame idle (breathing + peace sign). Use Hand on him or the counter: greeting with choices Shop / Follow me / Bye. Following, he trails ~1.5 tiles behind, walks around obstacles via your trail, and warps to you if stuck or >10 tiles away. Hand on him while away: Stay here / Go back to shop (or Follow me). While he's away the counter shows a "Rzel is out" sign and the shop is closed. Follow state is saved. Dev cheat: "Rzel follow". Override art with `ASSETS.shopkeeper` (24x40; replaces all his frames). Sprite keys: shopkeeper_0/1, rzel_{down,up,left,right}_{0,1,2}.
 
 ## Versioning
-The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.31; next: v0.0.0.32, ...).
+The on-screen label now uses v0.0.0.N numbering (current: v0.0.0.32; next: v0.0.0.33, ...).
 
 ### Rzel friendship (v0.10)
 0-5 hearts (100 pts each) shown in his dialogue box. Talking once per day: +15. One Gift per day (dialogue choice; gives your best item): chocolate = favorite +80, melon/corn = liked +45, radish = neutral +20. Greetings are tiered by hearts (0-1 teasing, 2-3 flirty, 4-5 devoted) plus rain/chocolate-rain lines. Saved in the save file (`rzel: {pts, talkDay, giftDay}`). Dev cheats: +1 heart, Reset hearts.
@@ -116,3 +116,10 @@ Rzel's world sprite now uses normal proportions (`ASSETS.rzel_world`) built from
 - Walk: front/back alternate a raised leg; side views split the legs (back leg shaded); the whole frame bobs. Sword visible on the shoulders in all 16 frames.
 - Dialogue adult portrait and icons are unchanged from v30.
 - Previews: v31-ares-frames.png, v31-ares-world.png
+
+## v0.0.0.32
+- Ares side walk uses the user-supplied 9-frame cycle (`ASSETS.ares_side`, facing right; left is a mirror). The white background is removed by edge-connected flood fill plus halo trimming. Frames that touch at the feet are split by growing each frame outward from its own torso, then anchored on the torso centre with a shared foot baseline.
+- Same pipeline as v31: 26 colours, despeckle, 1px outline, 96 art px tall in 72x100 cells, drawn h=33.
+- Walking left/right cycles all 9 frames, one frame per ARES_STEP=3.5 world px. Side idle uses frame 7 (legs together).
+- No sword in the side views, because the supplied strip has none. Front/back are unchanged from v31.
+- Previews: v32-ares-side.png, v32-ares-world.png
