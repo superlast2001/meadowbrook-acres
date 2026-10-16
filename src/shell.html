@@ -1,0 +1,46 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta http-equiv="Cache-Control" content="no-cache"><title>Neon Barn - Meadowbrook Acres</title>
+<style>
+html,body{height:100%;margin:0;background:#0e0c1a;color:#eee;font-family:monospace;overflow:hidden;overscroll-behavior:none}
+canvas#c{display:block;position:fixed;left:0;top:0;image-rendering:pixelated}
+body.touch{touch-action:none;-webkit-user-select:none;user-select:none;position:fixed;inset:0}
+#tc{display:none}body.touch #tc{display:block}body.touch.hidectl #tc{display:none}
+.tb{position:fixed;z-index:5;background:rgba(58,36,80,.8);border:2px solid #ff9ad8;color:#ffe9f6;border-radius:10px;font:bold 13px monospace;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none}
+.tb.on{background:#ff9ad8;color:#222}
+#dpad{position:fixed;left:calc(10px + env(safe-area-inset-left));bottom:calc(10px + env(safe-area-inset-bottom));width:126px;height:126px;z-index:5}
+#dpad .tb{position:absolute;width:42px;height:42px}
+#act{position:fixed;right:calc(10px + env(safe-area-inset-right));bottom:calc(10px + env(safe-area-inset-bottom));z-index:5;display:flex;align-items:flex-end;gap:6px}
+#act .tb{position:static;width:54px;height:40px}
+#bUse{width:70px!important;height:70px!important;border-radius:50%!important;font-size:15px!important}
+#menuBtn{left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));width:46px;height:40px;font-size:18px}
+#ctlBtn{display:none;position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:8px;background:#3a2450;border:2px solid #ff9ad8;color:#fff;border-radius:8px;font:bold 13px monospace;padding:5px 10px}
+body.touch.hidectl #ctlBtn{display:block}
+@media (orientation:portrait){body.touch:not(.hidectl){background:#1a1226}}
+#ver{position:fixed;z-index:20;left:6px;bottom:4px;color:#ffe9f6;font:11px monospace;opacity:.75;pointer-events:none}
+body.touch #ver{left:50%;transform:translateX(-50%);bottom:auto;top:calc(var(--ch) + 2px)}
+body.build #act .tb:not(#bUse){display:none}
+.modal{display:none;position:fixed;z-index:30;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,94vw);max-height:86vh;overflow:auto;background:#f2d8a0;border:4px solid #2b1a0e;box-shadow:inset 0 0 0 4px #8a5530,0 6px 0 rgba(0,0,0,.35);border-radius:6px;padding:14px;box-sizing:border-box;color:#3b2414;font:13px monospace}
+.modal.show{display:block}.modal h3{margin:0 0 8px;font-size:16px;color:#8a2e5e;display:flex;justify-content:space-between;align-items:center}
+.modal .sec{margin:10px 0 3px;font-size:11px;color:#6b3a1a;text-transform:uppercase}
+.modal button{font:bold 12px monospace;color:#ffe9b0;background:#8a5530;border:2px solid #2b1a0e;box-shadow:inset 0 -3px 0 #5e3a1e;border-radius:5px;padding:7px 9px;margin:2px;min-height:34px;touch-action:manipulation}
+.modal button:disabled{opacity:.45}.modal button.on{background:#4f8a3c}
+.modal .ln{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 0;border-bottom:1px dashed #c8a070;flex-wrap:wrap}
+.modal .info{margin:6px 0;font-size:12px;color:#5a2e12;background:#f8e6c0;border-radius:4px;padding:6px 8px;line-height:1.5}
+.modal i{color:#c8a880;font-style:normal}.soc{padding:6px 0;border-bottom:1px dashed #c8a070}.hs{color:#e0306a}
+#cheat .tabs{display:flex;gap:4px;flex-wrap:wrap}#cheat .tabs button{flex:1 1 22%}#cheat .tabs button.sel{background:#d8443a}#cheat .it{display:inline-flex;align-items:center;margin:2px 6px 2px 0;font-size:11px}
+#cheatBadge{display:none;position:fixed;z-index:21;left:50%;top:6px;transform:translateX(-50%);background:#b5452f;color:#fff;border-radius:5px;font:bold 11px monospace;padding:2px 7px;pointer-events:none}#cheatBadge.show{display:block}
+#dlg{display:none;position:fixed;z-index:28;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));width:min(560px,96vw);background:#f2d8a0;border:4px solid #2b1a0e;box-shadow:inset 0 0 0 4px #8a5530;border-radius:6px;padding:10px 12px;box-sizing:border-box;color:#3b2414;font:14px monospace}
+#dlg.show{display:block}#dlg .pt{display:flex;align-items:center;gap:10px}#dlg img,#dlg canvas{width:72px;height:72px;image-rendering:pixelated;background:#3a2450;border:2px solid #2b1a0e;border-radius:4px;object-fit:contain}
+#dlg .tx{margin:8px 0;line-height:1.45}#dlg .ch{display:flex;flex-wrap:wrap;gap:4px}#dlg button{font:bold 13px monospace;color:#ffe9b0;background:#8a3a6a;border:2px solid #2b1a0e;border-radius:5px;padding:8px 12px;min-height:38px}
+#dlg .hs i{color:#c8a880;font-style:normal}
+#buildbar{display:none;position:fixed;z-index:26;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top));width:min(620px,96vw);background:rgba(27,20,13,.92);border:2px solid #ff9ad8;border-radius:10px;padding:5px;box-sizing:border-box;flex-wrap:wrap;justify-content:center}
+#buildbar.show{display:flex}#buildbar button{font:bold 11px monospace;color:#fff;background:#3a2450;border:2px solid #ff9ad8;border-radius:6px;padding:6px 7px;margin:2px;min-height:34px}#buildbar button.on{background:#ff9ad8;color:#222}
+body.touch #buildbar{top:auto;bottom:calc(150px + 6px)}body.touch.hidectl #buildbar{bottom:8px}
+</style></head><body>
+<canvas id="c"></canvas><div id="ver">v</div><div id="cheatBadge">CHEATS ON</div>
+<div id="cheat" class="modal"></div><div id="panel" class="modal"></div><div id="dlg"></div><div id="buildbar"></div><button id="ctlBtn" type="button">Controls</button>
+<div id="tc"><div id="dpad"><div class="tb" data-d="arrowup" style="left:42px;top:0">&#9650;</div><div class="tb" data-d="arrowleft" style="left:0;top:42px">&#9664;</div><div class="tb" data-d="arrowright" style="left:84px;top:42px">&#9654;</div><div class="tb" data-d="arrowdown" style="left:42px;top:84px">&#9660;</div></div>
+<div class="tb" id="menuBtn">&#9776;</div>
+<div id="act"><div style="display:flex;flex-direction:column;gap:6px"><div class="tb" id="bSoc">&#9829;</div><div class="tb" id="bBuild">Build</div></div><div class="tb" id="bUse">USE</div></div></div>
+<script>
+/*JS*/
+</script></body></html>
