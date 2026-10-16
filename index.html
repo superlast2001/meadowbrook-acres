@@ -474,7 +474,7 @@ function bakePlaza(night){const c=bakeCanvas(PW,PH);NIGHT=night;sd=777;
   return c;}
 
 // ===== NEON BARN (Meadowbrook Acres v0.0.0.33) =====
-const VERSION='v0.0.0.41',SAVE_KEY='neonbarn_save_v1',TS=16;
+const VERSION='v0.0.0.42',SAVE_KEY='neonbarn_save_v1',TS=16;
 const SPR={};const cv=document.getElementById('c'),X=cv.getContext('2d');
 let G=null,AREA=null,cam={x:0,y:0},K=3,DPR=1,cssW=800,cssH=600,canH=600,TOUCH=false;
 const keys={};let UI=null; // open modal name
@@ -1276,9 +1276,10 @@ AREAS.club.bake=bakeClubPx;AREAS.home.bake=bakeHomePx;
 AREAS.home.outer='#e8902a';AREAS.club.outer='#1a1026';
 AREAS.home.solids.push([70,248,26,24],[232,262,34,28]);AREAS.club.solids.push([184,246,12,20],[284,246,12,20],[234,284,12,20]);
 
+/* v0.0.0.42: talk art upscaled with Real-ESRGAN x4plus anime_6B (+ original texture restore), alpha from original cut mask */
 // ===== v0.0.0.41: Ares from sheet 434816bf (crop + cutout only). Chibi world sprite; full-body mood poses as the talk stand; close-up expressions in a framed face card =====
 const AR={};const ARK=['po_talk','po_laugh','po_tease','po_embar','po_angry','po_think','po_surp','po_serious','ex_normal','ex_smile','ex_tease','ex_blush','ex_angry','ex_serious','ex_surp','ex_sad','strip_dir','strip_walk','strip_emo'];
-ARK.forEach(k=>{const i=new Image();i.onload=()=>AR[k]=i;i.src='ares/'+k+'.png?v=41';});
+ARK.forEach(k=>{const i=new Image();i.onload=()=>AR[k]=i;i.src='ares/'+k+(k.startsWith('strip')?'.png':'.webp')+'?v=42';});
 const AR_EMO={idle:0,smile:1,blush:2,angry:3,surprised:4,happy:5,sit:6};let aresEmo=null;
 function aresSetEmo(k,t){aresEmo=k?{k,t:performance.now()+(t||3500)}:null;}
 const _drawNPC0=drawNPC;
@@ -1302,9 +1303,9 @@ function aresInfer(t){t=String(t);if(/\?!|!\?|^\W*(what|huh|whoa)\b/i.test(t))re
  if(/\bhmm+\b|let me think/i.test(t))return 'thinking';if(/\b(sorry|miss(ed)?|alone|lonely|sad)\b/i.test(t))return 'sad';if(/charging|cute|admire|free of charge|rookie/i.test(t))return 'teasing';
  if(/\bnobody\b|keep trouble|security|not on my watch/i.test(t))return 'serious';if(/!/.test(t))return 'smile';return 'normal';}
 function aresStage(m){const d=$('dlg');if(!d||VN.id!='ares')return;const st=AR_STAGE[m]||AR_STAGE.normal,im=d.querySelector('.vp'),pw=d.querySelector('.vpw'),I=AR[st[0]];
- const asp=I?I.width/I.height:.52;const src='ares/'+st[0]+'.png?v=41';if(!im.src.endsWith(src)){im.classList.remove('arsw');void im.offsetWidth;im.classList.add('arsw');im.src=src;}im.style.imageRendering='auto';
+ const asp=I?I.width/I.height:.52;const src='ares/'+st[0]+'.webp?v=42';if(!im.src.endsWith(src)){im.classList.remove('arsw');void im.offsetWidth;im.classList.add('arsw');im.src=src;}im.style.imageRendering='auto';
  pw.style.setProperty('--asp',asp);pw.style.height='min(82vh,calc(100vw / '+asp.toFixed(3)+'))';
- let f=d.querySelector('.vface');if(!f){f=document.createElement('img');f.className='vface';f.alt='';d.querySelector('.vbox').appendChild(f);}f.src='ares/'+st[1]+'.png?v=41';f.style.display='';
+ let f=d.querySelector('.vface');if(!f){f=document.createElement('img');f.className='vface';f.alt='';d.querySelector('.vbox').appendChild(f);}f.src='ares/'+st[1]+'.webp?v=42';f.style.display='';
  aresSetEmo(AR_EMO_OF[m]||'idle',4000);}
 const _vnExpr0=vnExpr;vnExpr=function(m){const d=$('dlg');if(VN.id=='ares'){d.querySelector('.vpi').dataset.ex=m;d.querySelector('.vfx').querySelectorAll('.ex').forEach(e=>e.remove());aresStage(m);return;}
  const f=d&&d.querySelector('.vface');if(f)f.style.display='none';_vnExpr0(m);};
